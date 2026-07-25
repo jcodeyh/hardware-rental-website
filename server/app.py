@@ -7,13 +7,14 @@ from pymongo import MongoClient
 import usersDB
 import projectsDB
 import hardwareDB
+from blueprints.authentication import authentication_bp
 
 # Define the MongoDB connection string
 MONGODB_SERVER = "your_mongodb_connection_string_here"
 
 # Initialize a new Flask web application
 app = Flask(__name__)
-
+app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 # Route for user login
 @app.route('/login', methods=['POST'])
 def login():
