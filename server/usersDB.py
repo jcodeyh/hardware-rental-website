@@ -1,6 +1,6 @@
 # Import necessary libraries and modules
 from pymongo import MongoClient
-
+from dotenv import load_dotenv
 import projectsDB
 
 '''
@@ -12,6 +12,9 @@ User = {
     'projects': [project1_ID, project2_ID, ...]
 }
 '''
+load_dotenv()
+
+client = MongoClient('DATABASE_URL')
 
 # Function to add a new user
 def addUser(client, username, userId, password):
