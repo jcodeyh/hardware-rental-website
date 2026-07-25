@@ -17,7 +17,6 @@ app = Flask(__name__)
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
 
-
 # Route for the main page (Work in progress)
 @app.route('/main')
 def mainPage():

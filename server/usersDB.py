@@ -1,7 +1,7 @@
 # Import necessary libraries and modules
 from pymongo import MongoClient
-from dotenv import load_dotenv
 import projectsDB
+from config import Config
 
 '''
 Structure of User entry:
@@ -13,8 +13,12 @@ User = {
 }
 '''
 load_dotenv()
+DATABASE_URL = Config().database_url
+DATABASE_USERNAME = Config().database_username
+DATABASE_PASSWORD = Config().database_password
 
-client = MongoClient('DATABASE_URL')
+URL = f"mongodb+srv://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_URL}"
+client = MongoClient(URL)  # Connect to MongoDB using the constructed URL
 
 # Function to add a new user
 def addUser(client, username, userId, password):
