@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { toast } from "react-toastify";
-import AuthService from '../service/AuthService.js';
+import AuthService from '../service/authService.js';
 
 export default function Login() {
   const [userName, setUserName] = useState('')
