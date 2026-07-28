@@ -2,15 +2,32 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { toast } from "react-toastify";
+import AuthService from '../service/AuthService.js';
+
 export default function Login() {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   // const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    toast.success("Login Functionality");
+    let requestObject = {
+      "userName" : userName,
+      "password" :password,
+    }
+    // setError("");
+    try{
+      let response = AuthService.login(requestObject)
+      localStorage.setItem("userName", response.userName)
+      toast.success("Login Functionality");
+      console.log("inside login function")
+
+    }
+    catch (error) {
+    console.log(error);
+    toast.error("Login failed.");
+  }
   }
 
   return (
