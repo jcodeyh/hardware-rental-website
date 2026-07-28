@@ -1,4 +1,4 @@
-name: Backend CI
+name: Application CI
 
 on:
   push:
@@ -33,3 +33,10 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t backend-test ./server
+      - run: docker build -t frontend-test ./client
