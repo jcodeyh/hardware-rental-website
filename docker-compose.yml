@@ -1,10 +1,19 @@
 services:
-  client:
-    image: Dockerfile
-    build: ./client
-
-
   server:
-    image: Dockerfile
     build: ./server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    env_file:
+      - .env
 
+  client:
+    build: ./client
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - server
