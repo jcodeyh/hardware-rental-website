@@ -59,11 +59,11 @@ button {
 }
 
 button:hover {
-  background: #393333;
+  /* background: #393333; */
   cursor: pointer;
 }
 
-button.secondary {
+button.secondary, .btn-disabled {
   background: #eee;
   color: #333;
 }
@@ -82,4 +82,24 @@ button.secondary:hover {
   text-align: center;
   font-size: 14px;
   margin-top: 8px;
+}
+
+.Toastify__close-button {
+  position: absolute !important;
+  top: 8px;
+  right: 8px;
+  align-self: flex-start;
+}
+
+.Toastify__toast {
+  position: relative;
+}
+
+.btn-disabled {
+  background: #eee;
+  color: #333;
+}
+
+.btn-disabled :hover {
+  background: #ddd;
 }
