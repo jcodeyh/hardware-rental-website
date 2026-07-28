@@ -9,11 +9,6 @@ const LandingPage = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   const handleJoinProject = (newProject) => {
-    // Check if project code already exists to avoid duplicates
-    if (projects.some((p) => p.id.toLowerCase() === newProject.id.toLowerCase())) {
-      alert(`A project with code "${newProject.id}" is already in your dashboard.`);
-      return;
-    }
     setProjects([...projects, newProject]);
     setIsJoinModalOpen(false);
   };
@@ -38,6 +33,7 @@ const LandingPage = () => {
       <JoinProjectModal
         isOpen={isJoinModalOpen}
         onClose={() => setIsJoinModalOpen(false)}
+        joinedProjectIds={projects.map((p) => p.id)}
         onJoin={handleJoinProject}
       />
     </div>

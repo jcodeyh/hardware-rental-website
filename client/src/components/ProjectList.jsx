@@ -28,6 +28,35 @@ export const MOCK_PROJECTS = [
   }
 ];
 
+export const SYSTEM_PROJECTS = [
+  ...MOCK_PROJECTS,
+  {
+    id: 'proj-005',
+    name: 'Genomics Data Pipeline',
+    description: 'High-throughput sequencing analysis and pipeline execution for multi-omic dataset visualization.',
+    hardware: { hw1: 10, hw2: 30 }
+  },
+  {
+    id: 'proj-006',
+    name: 'Climate Modeling System',
+    description: 'Simulating global weather patterns and atmospheric changes using planetary-scale grid configurations.',
+    hardware: { hw1: 20, hw2: 50 }
+  },
+  {
+    id: 'proj-007',
+    name: 'Financial Risk Analyzer',
+    description: 'Real-time market simulation and credit risk forecasting using advanced statistical models.',
+    hardware: { hw1: 8, hw2: 12 }
+  },
+  {
+    id: 'proj-008',
+    name: 'Cyber Security Threat Detector',
+    description: 'Processing real-time network flow telemetry to detect anomalies and model security threats.',
+    hardware: { hw1: 12, hw2: 45 }
+  }
+];
+
+
 const ProjectList = ({ projects }) => {
   return (
     <div className="project-list-container">
