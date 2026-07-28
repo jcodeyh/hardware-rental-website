@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify, session
-from usersDB import addUser, login as user_login, joinProject, getUserProjectsList
+from database.usersDB import addUser, login as user_login, joinProject, getUserProjectsList
+from database.db import client
+from database.errors import DuplicateUserError
 
 authentication_bp = Blueprint('authentication', __name__)
 
@@ -14,12 +16,13 @@ def login():
     # Connect to MongoDB
 
     # Attempt to log in the user using the usersDB module
-    user_login(username, password)
+    result  = user_login(client, username, password) # type error 
 
-    # Close the MongoDB connection
+    if result is None:
+        return jsonify({"error": "Invalid username or password"}), 401
 
     # Return a JSON response
-    return jsonify({})
+    return jsonify({"data": result}), 200
 
 # Route for user logout
 @authentication_bp.route('/logout', methods=['POST'])
@@ -41,13 +44,15 @@ def logout():
 def signup():
     # Extract data from request
     data = request.get_json()
-
-    # Connect to MongoDB
+    username = data.get('username')
+    password = data.get('password')
 
     # Attempt to add the user using the usersDB module
-
-    # Close the MongoDB connection
+    try:
+        user_id = addUser(client, username, password)
+    except DuplicateUserError:
+        return jsonify({"error": "User already taken"}), 409
 
     # Return a JSON response
-    return jsonify({})
+    return jsonify({"user_id": user_id}), 201
 

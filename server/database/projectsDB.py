@@ -1,7 +1,6 @@
 # Import necessary libraries and modules
-from pymongo import MongoClient
-
-import hardwareDB
+import database.hardwareDB as hardwareDB
+from database.db import client
 
 '''
 Structure of Project entry:

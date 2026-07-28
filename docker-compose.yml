@@ -1,0 +1,10 @@
+services:
+  client:
+    image: Dockerfile
+    build: ./client
+
+
+  server:
+    image: Dockerfile
+    build: ./server
+
