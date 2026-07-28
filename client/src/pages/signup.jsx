@@ -6,17 +6,23 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const navigate = useNavigate();
-  function submitSignUp(e) {
+  function handleSubmit(e) {
     e.preventDefault();
     toast.success("Sign-Up Functionality");
     navigate('/login')
+  }
+
+  function clearForm (){
+    e.preventDefault();
+    setUserName('')
+    setPassword('')
   }
 
   return (
     <div>
       <div className="container">
       <h1>Sign Up</h1>
-      <form onSubmit={submitSignUp}>
+      <form>
         <div>
           <label htmlFor="userName">User Name</label>
           <input id="userName" value={userName} placeholder='Enter User Name' onChange={(e) => setUserName(e.target.value)}/>
@@ -34,7 +40,15 @@ export default function Signup() {
 
         <div className="row">
           <div className="col-lg-12 full-width">
-            <button type="submit" disabled="">Sign Up</button>
+            <div className="row">
+              <div className="col-lg-6">
+                <button className='secondary' disabled onClick={clearForm}>Clear</button>
+              </div>
+
+              <div className="col-lg-6">
+                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Log in</button>
+              </div>
+            </div>
           </div>
         </div>
       </form>

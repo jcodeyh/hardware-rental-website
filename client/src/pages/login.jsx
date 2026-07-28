@@ -9,32 +9,44 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   // const [loading, setLoading] = useState(false)
-
+  const navigate = useNavigate(); 
   async function handleSubmit(e) {
     e.preventDefault();
     let requestObject = {
-      "userName" : userName,
+      "username" : userName,
       "password" :password,
     }
+    // navigate('/landingPage')
     // setError("");
     try{
       let response = AuthService.login(requestObject)
-      localStorage.setItem("userName", response.userName)
+      localStorage.setItem("username", response.userName)
       toast.success("Login Functionality");
-      console.log("inside login function")
-
+      console.log("Logged in successfully")
+      if(response.statusCode == 200){
+        useNavigate('/landingPage')
+      }
+      else {
+        toast.error("Login failed with some other status-code")
+      }
     }
     catch (error) {
     console.log(error);
-    toast.error("Login failed.");
+    toast.error("Login failed");
   }
+  }
+
+  function clearForm (){
+    e.preventDefault();
+    setUserName('')
+    setPassword('')
   }
 
   return (
     <div>
       <div className="container">
       <h1>Log in</h1>
-      <form onSubmit={handleSubmit}>
+      <form>
         <div>
           <label htmlFor="userName">User Name</label>
           <input id="userName" value={userName} onChange={(e) => setUserName(e.target.value)}/>
@@ -47,7 +59,15 @@ export default function Login() {
 
         <div className="row">
           <div className="col-lg-12 full-width">
-            <button type="submit">Log in</button>
+            <div className="row">
+              <div className="col-lg-6">
+                <button className='secondary' onClick={clearForm}>Clear</button>
+              </div>
+
+              <div className="col-lg-6">
+                <button className={`${((userName == "") || (password == "") ) ? 'btn-disabled' : 'btn-primary'}`} disabled={((userName == "") || (password == "") )? true : false  } onClick={handleSubmit}>Log in</button>
+              </div>
+            </div>
           </div>
         </div>
       </form>
