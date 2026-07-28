@@ -8,3 +8,6 @@ MarkupSafe==3.0.3
 pymongo==4.17.0
 python-dotenv==1.2.2
 Werkzeug==3.1.8
+pytest>=8.0
+pytest-cov>=6.0
+flake8>=7.0
