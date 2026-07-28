@@ -1,5 +1,5 @@
 # Import necessary libraries and modules
-from pymongo import MongoClient
+from database.db import client
 
 '''
 Structure of Hardware Set entry:

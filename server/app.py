@@ -1,12 +1,11 @@
 # Import necessary libraries and modules
 from bson.objectid import ObjectId
 from flask import Flask, request, jsonify
-from pymongo import MongoClient
 
 # Import custom modules for database interactions
-import usersDB
-import projectsDB
-import hardwareDB
+import database.usersDB as usersDB
+import database.projectsDB as projectsDB
+import database.hardwareDB as hardwareDB
 from blueprints.authentication import authentication_bp
 
 # Define the MongoDB connection string
