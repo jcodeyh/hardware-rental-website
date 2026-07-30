@@ -21,9 +21,9 @@ export default function Login() {
     try{
       let response = AuthService.login(requestObject)
       localStorage.setItem("username", response.userName)
-      toast.success("Login Functionality");
-      console.log("Logged in successfully")
+     
       if(response.statusCode == 200){
+         console.log("Logged in successfully")
         useNavigate('/landingPage')
       }
       else {
