@@ -1,6 +1,8 @@
 # Import necessary libraries and modules
 from bson.objectid import ObjectId
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+from database.db import init_indexes
 
 # Import custom modules for database interactions
 import database.usersDB as usersDB
@@ -13,8 +15,11 @@ MONGODB_SERVER = "your_mongodb_connection_string_here"
 
 # Initialize a new Flask web application
 app = Flask(__name__)
+CORS(app, supports_credentials=True)  # allow the client (different port/origin) to call this API
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
+
+init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
 
 # Route for the main page (Work in progress)
 @app.route('/main')
@@ -182,5 +187,6 @@ def check_inventory():
 
 # Main entry point for the application
 if __name__ == '__main__':
+    init_indexes()  # Indexes are initialized at startup
     app.run()
 

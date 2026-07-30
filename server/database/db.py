@@ -11,4 +11,5 @@ client = MongoClient(URL)  # Connect to MongoDB using the constructed URL
 
 db = client[Config().database_name]
 
-db.users.create_index("username", unique=True)
+def init_indexes():
+    db.users.create_index("username", unique=True)
