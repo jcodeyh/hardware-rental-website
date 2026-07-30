@@ -17,7 +17,6 @@ User = {
 
 # Function to add a new user
 def addUser(client, username, password):
-    # Add a new user to the database
     password_hash = generate_password_hash(password)
 
     try:

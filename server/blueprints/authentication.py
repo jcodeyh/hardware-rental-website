@@ -13,9 +13,7 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    # Connect to MongoDB
-
-    # Attempt to log in the user using the usersDB module
+    # Attempt to log in
     result  = user_login(client, username, password) # type error 
 
     if result is None:
@@ -47,7 +45,7 @@ def signup():
     username = data.get('username')
     password = data.get('password')
 
-    # Attempt to add the user using the usersDB module
+    # Attempt to add the user
     try:
         user_id = addUser(client, username, password)
     except DuplicateUserError:
