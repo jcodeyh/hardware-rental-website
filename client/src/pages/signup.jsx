@@ -7,7 +7,7 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const navigate = useNavigate();
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     // toast.success("Sign-Up Functionality");
     // navigate('/login')
@@ -18,19 +18,20 @@ export default function Signup() {
           "password" :password,
         }
         try{
-          let response = AuthService.signup(requestObject)
+          let response = await AuthService.signup(requestObject)
          
-          if(response.statusCode == 200){
-             console.log("Sign-Up  successful")
-            useNavigate('/login')
+          if(response && response.user_id){
+            console.log("Sign-Up  successful")
+            toast.success("Sign-Up  successful")
+            navigate('/login')
           }
           else {
             toast.error("signup failed with some other status-code")
           }
         }
         catch (error) {
-        console.log(error);
-        toast.error("Login failed");
+        // console.log(error);
+        // toast.error("signup failed");
       }
   }
 
