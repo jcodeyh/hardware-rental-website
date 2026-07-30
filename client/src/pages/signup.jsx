@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from "react-toastify";
+import AuthService from '../service/authService.js';
 export default function Signup() {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
@@ -8,8 +9,29 @@ export default function Signup() {
   const navigate = useNavigate();
   function handleSubmit(e) {
     e.preventDefault();
-    toast.success("Sign-Up Functionality");
-    navigate('/login')
+    // toast.success("Sign-Up Functionality");
+    // navigate('/login')
+
+     e.preventDefault();
+        let requestObject = {
+          "username" : userName,
+          "password" :password,
+        }
+        try{
+          let response = AuthService.signup(requestObject)
+         
+          if(response.statusCode == 200){
+             console.log("Sign-Up  successful")
+            useNavigate('/login')
+          }
+          else {
+            toast.error("signup failed with some other status-code")
+          }
+        }
+        catch (error) {
+        console.log(error);
+        toast.error("Login failed");
+      }
   }
 
   function clearForm (){
@@ -42,11 +64,11 @@ export default function Signup() {
           <div className="col-lg-12 full-width">
             <div className="row">
               <div className="col-lg-6">
-                <button className='secondary' disabled onClick={clearForm}>Clear</button>
+                <button className='secondary' onClick={clearForm}>Clear</button>
               </div>
 
               <div className="col-lg-6">
-                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Log in</button>
+                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Sign up</button>
               </div>
             </div>
           </div>

@@ -14,7 +14,19 @@ class AuthService {
       headers: this.headers,
       body: JSON.stringify(requestObject),
     });
-    return response
+    const data = response.json();
+    return data
+  }
+
+  async signup(requestObject) {
+    let url = this.baseUrl + URLs.signup;
+    let response = await fetch(url, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(requestObject),
+    });
+    const data = response.json();
+    return data
   }
 }
 
