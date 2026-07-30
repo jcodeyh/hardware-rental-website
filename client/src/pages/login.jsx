@@ -19,20 +19,20 @@ export default function Login() {
     // navigate('/landingPage')
     // setError("");
     try{
-      let response = AuthService.login(requestObject)
+      let response = await AuthService.login(requestObject)
       localStorage.setItem("username", response.userName)
      
-      if(response.statusCode == 200){
-         console.log("Logged in successfully")
-        useNavigate('/landingPage')
+      if(response && response.data){
+        console.log("Logged in successfully")
+        navigate('/landingPage')
       }
       else {
         toast.error("Login failed with some other status-code")
       }
     }
     catch (error) {
-    console.log(error);
-    toast.error("Login failed");
+    // console.log(error);
+    // toast.error("Login failed");
   }
   }
 

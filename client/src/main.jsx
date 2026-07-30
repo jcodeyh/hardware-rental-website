@@ -14,7 +14,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ToastContainer
       position="top-right"
       autoClose={5000}
-      closeButton={true}
+      // closeButton={true}
       style={{ zIndex: 9999 }}
     />
   </>
