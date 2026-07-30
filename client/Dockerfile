@@ -1,28 +1,17 @@
-# Pull latest official node image
-FROM node:latest
+# Pull official node image (matches .github/workflows/ci.yml's node-version: 22)
+FROM node:22
 
-# Expose ports
-EXPOSE 3000
-EXPOSE 35729
-
-# Set working directory
 WORKDIR /app
 
-# add `/app/node_modules/.bin` to environment variables
-ENV PATH /app/node_modules/.bin:$PATH
+# Copy package files first so `npm ci` is cached unless deps change
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# react-scripts 3's webpack 4 calls Node's crypto module in a way modern
-# OpenSSL (Node 17+) rejects; this restores the legacy provider
-ENV NODE_OPTIONS=--openssl-legacy-provider
+# Add Vite app to working directory
+COPY . .
 
-# Copy package files and install app dependencies
-COPY package.json /app/package.json
-COPY package-lock.json /app/package-lock.json
-RUN npm install
-RUN npm install react-scripts -g
+# vite.config.js pins the dev server to port 8080
+EXPOSE 8080
 
-# Add React app to working directory
-ADD . /app
-
-# Start the React app
-CMD ["npm", "start"]
+# --host so the dev server is reachable from outside the container, not just localhost inside it
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
