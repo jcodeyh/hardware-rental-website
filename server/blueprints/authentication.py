@@ -27,17 +27,8 @@ def login():
 # Route for user logout
 @authentication_bp.route('/logout', methods=['POST'])
 def logout():
-    # Extract data from request
-    data = request.get_json()
-
-    # Connect to MongoDB
-
-    # Attempt to log out the user (if necessary)
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
+    session.clear()  # Clear the session to log out the user
+    return "", 204 
 
 # Route for user signup
 @authentication_bp.route('/signup', methods=['POST'])

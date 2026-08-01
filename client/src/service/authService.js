@@ -3,7 +3,8 @@ import URLs from "../url";
 
 class AuthService {
   constructor() {
-    this.baseUrl = "http://127.0.0.1:5000/";
+    // this.baseUrl = "http://127.0.0.1:5000/";
+    this.baseUrl = "http://127.0.0.1:8000/"; // Docker Compose exposes the backend on port 8000
     this.headers =  { "Content-Type": "application/json" }
   }
 
