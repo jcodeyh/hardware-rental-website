@@ -1,6 +1,5 @@
 # Import necessary libraries and modules
-from database.db import client
-
+from database.db import db
 '''
 Structure of Hardware Set entry:
 HardwareSet = {
@@ -31,7 +30,5 @@ def requestSpace(client, hwSetName, amount):
     pass
 
 # Function to get all hardware set names
-def getAllHwNames(client):
-    # Get and return a list of all hardware set names
-    pass
-
+def getAllHwNames():
+    return list(db.hardware.find({}))

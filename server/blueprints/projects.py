@@ -1,25 +1,36 @@
 from flask import Blueprint, request, jsonify
 
 import database.projectsDB as projectsDB
+import database.hardwareDB as hardwareDB
 
 
 projects_bp = Blueprint("projects", __name__)
 
 # Route for getting project information
-@projects_bp.route('/get_project_info', methods=['POST'])
+@projects_bp.route("/get_project_info", methods=["GET"])
 def get_project_info():
     data = request.get_json()
-    projectId = data.get("projectId")
-    project = projectsDB.queryProject(projectId)
+    project_id = data.get("projectId")
+
+    project = projectsDB.queryProject(project_id)
 
     if project is None:
-        return jsonify({"Project not found."}), 404
+        return jsonify({"error": "Project not found"}), 404
+
+    hardware_sets = hardwareDB.getAllHwNames()
 
     response = {
         "projectId": project["projectId"],
         "projectName": project["projectName"],
         "description": project["description"],
         "hwSets": project["hwSets"],
-        "users": [str(user_id) for user_id in project["users"]],
+        "hardwareSets": [
+            {
+                "hwName": hardware["hwName"],
+                "capacity": hardware["capacity"],
+                "availability": hardware["availability"],
+            }
+            for hardware in hardware_sets
+        ],
     }
     return jsonify(response), 200

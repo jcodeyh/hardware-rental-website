@@ -10,6 +10,7 @@ import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
 from blueprints.authentication import authentication_bp
 from blueprints.projects import projects_bp
+from blueprints.hardware import hardware_bp
 
 # Initialize Flask
 app = Flask(__name__)
@@ -18,6 +19,7 @@ CORS(app, supports_credentials=True)  # allow the client to call this API
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 app.register_blueprint(projects_bp)  # Register the projects blueprint
+app.register_blueprint(hardware_bp)
 app.secret_key = 'your_secret_key_here'  # Set secret key for session management
 
 init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
@@ -86,74 +88,6 @@ def create_project():
     # Connect to MongoDB
 
     # Attempt to create the project using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for getting all hardware names
-@app.route('/get_all_hw_names', methods=['POST'])
-def get_all_hw_names():
-    # Connect to MongoDB
-
-    # Fetch all hardware names using the hardwareDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for getting hardware information
-@app.route('/get_hw_info', methods=['POST'])
-def get_hw_info():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Fetch hardware set information using the hardwareDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for checking out hardware
-@app.route('/check_out', methods=['POST'])
-def check_out():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to check out the hardware using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for checking in hardware
-@app.route('/check_in', methods=['POST'])
-def check_in():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to check in the hardware using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for creating a new hardware set
-@app.route('/create_hardware_set', methods=['POST'])
-def create_hardware_set():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to create the hardware set using the hardwareDB module
 
     # Close the MongoDB connection
 
