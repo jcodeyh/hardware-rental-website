@@ -1,6 +1,6 @@
 # Import necessary libraries and modules
 import database.hardwareDB as hardwareDB
-from database.db import client
+from database.db import db
 
 '''
 Structure of Project entry:
@@ -14,9 +14,9 @@ Project = {
 '''
 
 # Function to query a project by its ID
-def queryProject(client, projectId):
+def queryProject(projectId):
     # Query and return a project from the database
-    pass
+    return db.projects.find_one({"projectId": projectId})
 
 # Function to create a new project
 def createProject(client, projectName, projectId, description):

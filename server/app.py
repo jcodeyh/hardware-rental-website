@@ -9,7 +9,7 @@ import database.usersDB as usersDB
 import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
 from blueprints.authentication import authentication_bp
-
+from blueprints.projects import projects_bp
 
 # Initialize Flask
 app = Flask(__name__)
@@ -17,6 +17,7 @@ CORS(app, supports_credentials=True)  # allow the client to call this API
 # cors = CORS(app, resources={r"/*": {"origins": "*"}})  # allow the client to call this API
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
+app.register_blueprint(projects_bp)  # Register the projects blueprint
 app.secret_key = 'your_secret_key_here'  # Set secret key for session management
 
 init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
@@ -85,20 +86,6 @@ def create_project():
     # Connect to MongoDB
 
     # Attempt to create the project using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for getting project information
-@app.route('/get_project_info', methods=['POST'])
-def get_project_info():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Fetch project information using the projectsDB module
 
     # Close the MongoDB connection
 
