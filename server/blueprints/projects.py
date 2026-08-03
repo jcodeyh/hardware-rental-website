@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session
 
 import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
+from database.usersDB import getUserByUsername
 
 
 projects_bp = Blueprint("projects", __name__)
@@ -19,6 +20,11 @@ def get_project_info():
 
     if project is None:
         return jsonify({"error": "Project not found"}), 404
+
+    user = getUserByUsername(session["username"])
+
+    if user["_id"] not in project["users"]:
+        return jsonify({"error": "Forbidden"}), 403
 
     hardware_sets = hardwareDB.getAllHwNames()
 
