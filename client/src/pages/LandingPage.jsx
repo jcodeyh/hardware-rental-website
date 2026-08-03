@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
-import ProjectList, { MOCK_PROJECTS } from '../components/ProjectList';
+import ProjectList, { MOCK_PROJECTS, SYSTEM_PROJECTS } from '../components/ProjectList';
 import JoinProjectModal from '../components/JoinProjectModal';
-// import Footer from '../components/Footer';
+import AddProjectModal from '../components/AddProjectModal';
 
 const LandingPage = () => {
+  const [systemProjects, setSystemProjects] = useState(SYSTEM_PROJECTS);
   const [projects, setProjects] = useState(MOCK_PROJECTS);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const handleJoinProject = (newProject) => {
     // Check if project code already exists to avoid duplicates
@@ -18,9 +20,18 @@ const LandingPage = () => {
     setIsJoinModalOpen(false);
   };
 
+  const handleCreateProject = (newProject) => {
+    setSystemProjects([...systemProjects, newProject]);
+    setProjects([...projects, newProject]);
+    setIsAddModalOpen(false);
+  };
+
   return (
     <div className="app-container" id="landing-page-container">
-      <Navbar onJoinClick={() => setIsJoinModalOpen(true)} />
+      <Navbar 
+        onJoinClick={() => setIsJoinModalOpen(true)} 
+        onAddClick={() => setIsAddModalOpen(true)}
+      />
       
       <main className="main-content" id="landing-page-main">
         <h1 className="page-title" id="landing-page-title">Hardware as a Service</h1>
@@ -38,7 +49,15 @@ const LandingPage = () => {
       <JoinProjectModal
         isOpen={isJoinModalOpen}
         onClose={() => setIsJoinModalOpen(false)}
+        joinedProjectIds={projects.map((p) => p.id)}
         onJoin={handleJoinProject}
+      />
+
+      <AddProjectModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        allSystemProjects={systemProjects}
+        onCreateProject={handleCreateProject}
       />
     </div>
   );

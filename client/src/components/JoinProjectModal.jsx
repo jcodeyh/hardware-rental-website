@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
 
-const JoinProjectModal = ({ isOpen, onClose, onJoin }) => {
-  const [projectCode, setProjectCode] = useState('');
-  const [projectName, setProjectName] = useState('');
-  const [projectDesc, setProjectDesc] = useState('');
+const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], onJoin }) => {
+  const [projectId, setProjectId] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!projectCode.trim() || !projectName.trim() || !projectDesc.trim()) {
-      setError('All fields are required.');
+    const cleanId = projectId.trim();
+    
+    if (!cleanId) {
+      setError('Project ID is required.');
+      return;
+    }
+
+    // Verify if project exists in system registry
+    const matchedProject = SYSTEM_PROJECTS.find(
+      (p) => p.id.toLowerCase() === cleanId.toLowerCase()
+    );
+
+    if (!matchedProject) {
+      setError('Project ID does not exist.');
+      return;
+    }
+
+    // Verify if user is already a member
+    if (joinedProjectIds.some((id) => id.toLowerCase() === cleanId.toLowerCase())) {
+      setError('You have already joined this project.');
       return;
     }
     setError('');
