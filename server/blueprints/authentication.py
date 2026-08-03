@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from database.usersDB import addUser, login as user_login, joinProject, getUserProjectsList
+from database.usersDB import addUser, login as user_login, joinProject, getUserProjectsList, getUserByUsername
 from database.db import client
 from database.errors import DuplicateUserError
 
@@ -13,13 +13,16 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    # Attempt to log in
-    result  = user_login(client, username, password) # type error 
+    result = user_login(client, username, password)
 
     if result is None:
         return jsonify({"error": "Invalid username or password"}), 401
 
-    # Return a JSON response
+    user = getUserByUsername(result)
+
+    session["username"] = user["username"]
+    session["user_id"] = str(user["_id"])
+
     return jsonify({"data": result}), 200
 
 # Route for user logout
