@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 
 import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
@@ -9,6 +9,9 @@ projects_bp = Blueprint("projects", __name__)
 # Route for getting project information
 @projects_bp.route("/get_project_info", methods=["GET"])
 def get_project_info():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
     data = request.get_json()
     project_id = data.get("projectId")
 
