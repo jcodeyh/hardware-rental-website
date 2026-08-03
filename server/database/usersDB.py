@@ -38,6 +38,9 @@ def __queryUser(client, username):
         return result
     return None
 
+def getUserByUsername(username):
+    return db.users.find_one({"username": username})
+
 # Function to log in a user
 def login(client, username, password):
     # Authenticate a user and return login status
