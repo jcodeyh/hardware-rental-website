@@ -8,3 +8,4 @@ class Config:
         self.database_username = getenv('DATABASE_USERNAME')  # Get the database username
         self.database_password = getenv('DATABASE_PASSWORD')  # Get the database password
         self.database_name = getenv('DATABASE_NAME')  # Get the database name
+        self.session_pass = getenv('SESSION_PASS')  # Get the session password
