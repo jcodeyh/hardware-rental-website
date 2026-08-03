@@ -3,8 +3,10 @@ import URLs from "../url";
 
 class AuthService {
   constructor() {
-    this.baseUrl = "http://localhost:8000";
-    this.headers =  { "Content-Type": "application/json" }
+    // Vite inlines VITE_* at build time; falls back to the local Flask
+    // server so `npm run dev` keeps working with no extra setup.
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    this.headers = { "Content-Type": "application/json" };
   }
 
   async login(requestObject) {
