@@ -1,9 +1,6 @@
 # Import libraries and modules
-<<<<<<< HEAD
 from os import getenv
 
-=======
->>>>>>> main
 from bson.objectid import ObjectId
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -18,7 +15,6 @@ from blueprints.authentication import authentication_bp
 from blueprints.projects import projects_bp
 from blueprints.hardware import hardware_bp
 
-<<<<<<< HEAD
 
 # Initialize Flask
 app = Flask(__name__)
@@ -37,17 +33,6 @@ CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=
 
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 app.secret_key = Config().session_pass  # Set secret key for session management
-=======
-# Initialize Flask
-app = Flask(__name__)
-CORS(app, supports_credentials=True)  # allow the client to call this API
-# cors = CORS(app, resources={r"/*": {"origins": "*"}})  # allow the client to call this API
-# app.config['CORS_HEADERS'] = 'Content-Type'
-app.register_blueprint(authentication_bp)  # Register the authentication blueprint
-app.register_blueprint(projects_bp)  # Register the projects blueprint
-app.register_blueprint(hardware_bp)
-app.secret_key = 'your_secret_key_here'  # Set secret key for session management
->>>>>>> main
 
 init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
 
