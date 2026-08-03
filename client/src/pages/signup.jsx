@@ -1,15 +1,38 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from "react-toastify";
+import AuthService from '../service/authService.js';
 export default function Signup() {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const navigate = useNavigate();
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    toast.success("Sign-Up Functionality");
-    navigate('/login')
+    // toast.success("Sign-Up Functionality");
+    // navigate('/login')
+
+     e.preventDefault();
+        let requestObject = {
+          "username" : userName,
+          "password" :password,
+        }
+        try{
+          let response = await AuthService.signup(requestObject)
+         
+          if(response && response.user_id){
+            console.log("Sign-Up  successful")
+            toast.success("Sign-Up  successful")
+            navigate('/login')
+          }
+          else {
+            toast.error("signup failed with some other status-code")
+          }
+        }
+        catch (error) {
+        // console.log(error);
+        // toast.error("signup failed");
+      }
   }
 
   function clearForm (){
@@ -42,11 +65,11 @@ export default function Signup() {
           <div className="col-lg-12 full-width">
             <div className="row">
               <div className="col-lg-6">
-                <button className='secondary' disabled onClick={clearForm}>Clear</button>
+                <button className='secondary' onClick={clearForm}>Clear</button>
               </div>
 
               <div className="col-lg-6">
-                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Log in</button>
+                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Sign up</button>
               </div>
             </div>
           </div>

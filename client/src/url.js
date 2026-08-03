@@ -1,6 +1,6 @@
 const URLs = {
         "login"  : "/login",
-        "signUp" :  "/signup",
+        "signUp" : "/signup",
         
     }
 
