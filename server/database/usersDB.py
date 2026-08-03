@@ -1,9 +1,7 @@
 # Import necessary libraries and modules
-import database.projectsDB as projectsDB
 from database.db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from database.errors import DuplicateUserError
-from database.db import client
 
 '''
 Structure of User entry:
@@ -26,7 +24,9 @@ def addUser(client, username, password):
             'projects': []
         })
     except Exception as e:
-        raise DuplicateUserError(f"User already {username} exists")
+        # `from e` keeps the original pymongo error as __cause__ so the real
+        # failure is still in the traceback, and uses `e` (silencing F841).
+        raise DuplicateUserError(f"User already {username} exists") from e
 
     return str(result.inserted_id)
 

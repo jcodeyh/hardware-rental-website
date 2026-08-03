@@ -18,7 +18,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: flake8 . --exit-zero
+      # F-checks are correctness, not style: unused imports, redefinitions,
+      # undefined names. These block the build -- an unregistered blueprint
+      # shows up here as "imported but unused".
+      - run: flake8 . --select=F
+      # Everything else (line length, whitespace) is advisory only.
+      - run: flake8 . --extend-ignore=F --exit-zero
       - run: pytest --cov=.
 
   frontend:
@@ -102,5 +107,8 @@ jobs:
 
       - name: Smoke test
         run: |
-          curl -fsS --retry 5 --retry-delay 15 --retry-all-errors -o /dev/null "$SERVER_FQDN/main"
+          # /get_all_hw_names is deliberate: it is unauthenticated, and it
+          # exercises app boot -> hardware blueprint registration -> Mongo.
+          # A stub route like /main returns 200 even when the app is broken.
+          curl -fsS --retry 5 --retry-delay 15 --retry-all-errors -o /dev/null "$SERVER_FQDN/get_all_hw_names"
           curl -fsS --retry 5 --retry-delay 15 --retry-all-errors -o /dev/null "$CLIENT_FQDN/"

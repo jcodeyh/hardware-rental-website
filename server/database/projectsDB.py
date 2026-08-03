@@ -1,5 +1,4 @@
 # Import necessary libraries and modules
-import database.hardwareDB as hardwareDB
 from database.db import db
 
 '''
