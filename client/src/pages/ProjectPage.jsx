@@ -80,16 +80,15 @@ const ProjectPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Using the existing routes from app.py
-        const projRes = await fetch(`http://localhost:5000/get_project_info`, {
-          method: 'POST',
+        // Using the existing routes from app.py (both are GET routes)
+        const projRes = await fetch(`http://localhost:5000/get_project_info?projectId=${encodeURIComponent(projectId)}`, {
+          method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId })
+          credentials: 'include'
         });
         const hwRes = await fetch(`http://localhost:5000/get_all_hw_names`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          method: 'GET',
+          credentials: 'include'
         });
 
         if (!projRes.ok || !hwRes.ok) {
