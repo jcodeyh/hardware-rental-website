@@ -43,10 +43,10 @@ export default function Login() {
   }
 
   return (
-    <div>
+    <div className='page'>
       <div className="container">
       <h1>Log in</h1>
-      <form>
+      <form className='mt-4'>
         <div>
           <label htmlFor="userName">User Name</label>
           <input id="userName" value={userName} onChange={(e) => setUserName(e.target.value)}/>
@@ -65,14 +65,14 @@ export default function Login() {
               </div>
 
               <div className="col-lg-6">
-                <button className={`${((userName == "") || (password == "") ) ? 'btn-disabled' : 'btn-primary'}`} disabled={((userName == "") || (password == "") )? true : false  } onClick={handleSubmit}>Log in</button>
+                <button className={`${((userName == "") || (password == "") ) ? 'btn-disabled' : 'button'}`} disabled={((userName == "") || (password == "") )? true : false  } onClick={handleSubmit}>Log in</button>
               </div>
             </div>
           </div>
         </div>
       </form>
 
-      <div className='signUpLink'> Don't have an account? <Link to="/signUp">Sign up</Link></div>
+      <div className='signUpLink mt-4'> Don't have an account? <Link to="/signUp">Sign up</Link></div>
     </div>
     </div>
   )

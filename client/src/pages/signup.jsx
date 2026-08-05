@@ -39,26 +39,27 @@ export default function Signup() {
     e.preventDefault();
     setUserName('')
     setPassword('')
+    setConfirmPassword('')
   }
 
   return (
-    <div>
+    <div className='page'>
       <div className="container">
       <h1>Sign Up</h1>
-      <form>
+      <form className='mt-4'>
         <div>
           <label htmlFor="userName">User Name</label>
-          <input id="userName" value={userName} placeholder='Enter User Name' onChange={(e) => setUserName(e.target.value)}/>
+          <input id="userName" value={userName}  onChange={(e) => setUserName(e.target.value)}/>
         </div>
 
         <div>
           <label htmlFor="password">Password</label>
-          <input id="password" type="password" value={password} placeholder='Enter New Password' onChange={(e) => setPassword(e.target.value)}/>
+          <input id="password" type="password" value={password}  onChange={(e) => setPassword(e.target.value)}/>
         </div>
 
          <div>
           <label htmlFor="confirmPassword">Confirm Password</label>
-          <input id="confirmPassword" type="password" value={confirmPassword} placeholder='Enter Confirm Password' onChange={(e) => setConfirmPassword(e.target.value)}/>
+          <input id="confirmPassword" type="password" value={confirmPassword}  onChange={(e) => setConfirmPassword(e.target.value)}/>
         </div>
 
         <div className="row">
@@ -69,12 +70,14 @@ export default function Signup() {
               </div>
 
               <div className="col-lg-6">
-                <button  disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Sign up</button>
+                <button  className={`${((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) ) ? 'btn-disabled' : 'button'}`}
+                disabled={((userName == "") || (password == "") || (confirmPassword == "") || (password != confirmPassword) )? true : false  } onClick={handleSubmit}>Sign Up</button>
               </div>
             </div>
           </div>
         </div>
       </form>
+       <div className='signUpLink mt-4'>Already have an account? <Link to="/login">Login</Link></div>
 
     </div>
     </div>
