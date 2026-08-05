@@ -13,8 +13,9 @@ def get_project_info():
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
     
-    data = request.get_json()
-    project_id = data.get("projectId")
+    # data = request.get_json()
+    # project_id = data.get("projectId")
+    project_id = request.args.get("projectId")
 
     project = projectsDB.queryProject(project_id)
 
