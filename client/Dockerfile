@@ -1,5 +1,5 @@
-# Pull official node image (matches .github/workflows/ci.yml's node-version: 22)
-FROM node:22
+# Stage 1: build the static bundle
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -7,11 +7,21 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Add Vite app to working directory
 COPY . .
 
-# vite.config.js pins the dev server to port 8080
+# Vite inlines import.meta.env.VITE_* at build time, so the API URL has to be
+# supplied here as a build arg -- setting it at container start has no effect.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN npm run build
+
+# Stage 2: serve the bundle
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Matches the Container App ingress targetPort
 EXPOSE 8080
 
-# --host so the dev server is reachable from outside the container, not just localhost inside it
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["nginx", "-g", "daemon off;"]
