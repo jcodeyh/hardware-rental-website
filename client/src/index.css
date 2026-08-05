@@ -26,12 +26,15 @@ body {
 }
 
 .container {
+  position: relative;
   max-width: 400px;
   margin: 80px auto;
   vertical-align: middle;
   padding: 30px;
   background: #fff;
   border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 14px 14px 0 0 #6452e5;
 }
 
 label {
@@ -51,7 +54,7 @@ input {
 button {
   width: 100%;
   height: 35px;
-  background: #1329a5;
+  background: #6452e5;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -63,9 +66,15 @@ button:hover {
   cursor: pointer;
 }
 
-button.secondary, .btn-disabled {
+button.secondary {
   background: #eee;
   color: #333;
+}
+
+button:disabled,
+button.disabled {
+  cursor: not-allowed;
+  opacity: 0.6; /* optional: makes the button look faded */
 }
 
 button.secondary:hover {
@@ -102,4 +111,16 @@ button.secondary:hover {
 
 .btn-disabled :hover {
   background: #ddd;
+}
+
+.page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FAFAFA;
+  background-image: radial-gradient(#E3E3E3 1px, transparent 1px);
+  background-size: 22px 22px;
+  padding: 24px;
 }
