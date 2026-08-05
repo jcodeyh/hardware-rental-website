@@ -57,7 +57,24 @@ def checkOutHW(projectId, hwSetName, qty):
     return True
 
 # Function to check in hardware for a project
-def checkInHW(client, projectId, hwSetName, qty, userId):
-    # Check in hardware for the specified project and update availability
-    pass
+def checkInHW(projectId, hwSetName, qty):
+    # Decrease the amount held by the project only if it holds enough
+    result = db.projects.update_one(
+        {
+            "projectId": projectId,
+            f"hwSets.{hwSetName}": {"$gte": qty}
+        },
+        {
+            "$inc": {
+                f"hwSets.{hwSetName}": -qty
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return False
+
+    hardwareDB.releaseHardware(hwSetName, qty)
+
+    return True
 
