@@ -13,6 +13,10 @@ class AuthService {
     let response = await fetch(url, {
       method: "POST",
       headers: this.headers,
+      // The API is a different origin, and fetch defaults to
+      // credentials: "same-origin" -- without this the browser silently
+      // discards the session cookie the server sets here.
+      credentials: "include",
       body: JSON.stringify(requestObject),
     });
     const data = await response.json();
@@ -24,6 +28,7 @@ class AuthService {
     let response = await fetch(url, {
       method: "POST",
       headers: this.headers,
+      credentials: "include",
       body: JSON.stringify(requestObject),
     });
     const data = await response.json(); 

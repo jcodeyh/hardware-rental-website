@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from database.usersDB import addUser, login as user_login, joinProject, getUserProjectsList, getUserByUsername
+from database.usersDB import addUser, login as user_login, getUserByUsername
 from database.db import client
 from database.errors import DuplicateUserError
 

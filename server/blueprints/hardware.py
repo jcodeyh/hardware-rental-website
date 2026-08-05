@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
 from database import hardwareDB
 
 hardware_bp = Blueprint("hardware", __name__)
