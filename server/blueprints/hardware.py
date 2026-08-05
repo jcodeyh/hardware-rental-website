@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
-from database import hardwareDB
+from flask import Blueprint, jsonify, request, session
+from database import hardwareDB, projectsDB, usersDB
 
 hardware_bp = Blueprint("hardware", __name__)
 
@@ -36,16 +36,40 @@ def get_hw_info():
 # Route for checking out hardware
 @hardware_bp.route('/check_out', methods=['POST'])
 def check_out():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
     # Extract data from request
+    data = request.get_json()
 
-    # Connect to MongoDB
+    project_id = data.get("projectId")
+    hw_set_name = data.get("hwSetName")
+    qty = data.get("qty")
 
-    # Attempt to check out the hardware using the projectsDB module
+    if not isinstance(qty, int) or qty < 1:
+        return jsonify({"error": "Quantity must be a positive integer"}), 400
 
-    # Close the MongoDB connection
+    project = projectsDB.queryProject(project_id)
+    #make sure the project exists
+    if project is None:
+        return jsonify({"error": "Project not found"}), 404
 
-    # Return a JSON response
-    return jsonify({})
+    user = usersDB.getUserByUsername(session["username"])
+
+    if user["_id"] not in project["users"]:
+        return jsonify({"error": "Forbidden"}), 403
+
+    # Attempt to check out the hardware
+    success = projectsDB.checkOutHW(
+        project_id,
+        hw_set_name,
+        qty,
+    )
+
+    if not success:
+        return jsonify({"error": "Not enough hardware available"}), 409
+
+    return jsonify({"message": "Hardware checked out successfully"}), 200
 
 # Route for checking in hardware
 @hardware_bp.route('/check_in', methods=['POST'])
