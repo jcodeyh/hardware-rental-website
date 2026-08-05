@@ -2,9 +2,6 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from "react-toastify";
 import AuthService from '../service/authService.js';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-
 export default function Signup() {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
