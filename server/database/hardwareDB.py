@@ -9,6 +9,26 @@ HardwareSet = {
 }
 '''
 
+def reserveHardware(hwSetName, qty):
+    return db.hardware.update_one(
+        {
+            "hwName": hwSetName,
+            "availability": {"$gte": qty} # Update if the availability is greater than or equal to the quantity.
+        },
+        {
+            "$inc": { # Increase a value
+                "availability": -qty
+            }
+        }
+    )
+
+def releaseHardware(hwSetName, qty):
+    # Return hardware units to availability
+    return db.hardware.update_one(
+        {"hwName": hwSetName},
+        {"$inc": {"availability": qty}}
+    )
+
 # Function to create a new hardware set
 def createHardwareSet(client, hwSetName, initCapacity):
     # Create a new hardware set in the database

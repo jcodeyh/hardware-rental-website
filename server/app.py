@@ -62,20 +62,6 @@ def mainPage():
     # Return a JSON response
     return jsonify({})
 
-# Route for joining a project
-@app.route('/join_project', methods=['POST'])
-def join_project():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to join the project using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
 # Route for adding a new user
 @app.route('/add_user', methods=['POST'])
 def add_user():
@@ -98,20 +84,6 @@ def get_user_projects_list():
     # Connect to MongoDB
 
     # Fetch the user's projects using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for creating a new project
-@app.route('/create_project', methods=['POST'])
-def create_project():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to create the project using the projectsDB module
 
     # Close the MongoDB connection
 
