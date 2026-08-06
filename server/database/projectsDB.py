@@ -1,6 +1,7 @@
 # Import necessary libraries and modules
 from database.db import db
 import database.hardwareDB as hardwareDB
+from bson.objectid import ObjectId
 
 '''
 Structure of Project entry:
@@ -34,9 +35,17 @@ def createProject(projectName, projectId, description):
         return False
 
 # Function to add a user to a project
-def addUser(client, projectId, userId):
-    # Add a user to the specified project
-    pass
+def addUser(projectId, userId):
+    result = db.projects.update_one({
+            "projectId": projectId
+    },
+    {
+        "$addToSet": { #adds a value to an array only if that value does not already exist
+            "users":ObjectId(userId)
+        }
+    })
+
+    return result
 
 # Function to update hardware usage in a project
 def updateUsage(client, projectId, hwSetName):
