@@ -44,3 +44,24 @@ def get_project_info():
         ],
     }
     return jsonify(response), 200
+
+# Route for joining a project
+@projects_bp.route('/join_project', methods=['POST'])
+def join_project():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    project_id = data.get("projectId")
+
+    # Add the logged-in user to the project
+    result = projectsDB.addUser(
+        project_id,
+        session["user_id"]
+    )
+
+    # No project matched the given projectId
+    if result.matched_count == 0:
+        return jsonify({"error": "Project not found"}), 404
+
+    return jsonify({"message": "Project joined successfully"}), 200
