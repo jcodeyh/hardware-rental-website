@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import authService from '../service/authService';
 
 // Simple popup modal for quantity input
 const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) => {
@@ -81,12 +82,12 @@ const ProjectPage = () => {
       try {
         setLoading(true);
         // Using the existing routes from app.py (both are GET routes)
-        const projRes = await fetch(`http://localhost:5000/get_project_info?projectId=${encodeURIComponent(projectId)}`, {
+        const projRes = await fetch(`/get_project_info?projectId=${encodeURIComponent(projectId)}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
         });
-        const hwRes = await fetch(`http://localhost:5000/get_all_hw_names`, {
+        const hwRes = await fetch(`/get_all_hw_names`, {
           method: 'GET',
           credentials: 'include'
         });
@@ -152,16 +153,43 @@ const ProjectPage = () => {
   const openModal = (hw, mode) => setModal({ open: true, hw, mode });
   const closeModal = () => setModal({ open: false, hw: null, mode: null });
 
-  const handleConfirm = (qty) => {
+  const handleConfirm = async (qty) => {
     const { hw, mode } = modal;
-    if (mode === 'checkin') {
-      setProjectHardware((prev) => ({ ...prev, [hw.key]: Math.max(0, (prev[hw.key] || 0) - qty) }));
-      setAvailability((prev) => ({ ...prev, [hw.key]: Math.min(hw.capacity, (prev[hw.key] || 0) + qty) }));
-    } else {
-      setProjectHardware((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) + qty }));
-      setAvailability((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) - qty }));
+    try {
+      let result;
+      if (mode === 'checkin') {
+        result = await authService.checkIn({
+          projectId: project.id,
+          hwSetName: hw.key,
+          qty
+        });
+      } else {
+        result = await authService.checkOut({
+          projectId: project.id,
+          hwSetName: hw.key,
+          qty
+        });
+      }
+
+      if (result.error) {
+        alert(`Error: ${result.error}`);
+        closeModal();
+        return;
+      }
+
+      // Update local state to reflect the confirmed change
+      if (mode === 'checkin') {
+        setProjectHardware((prev) => ({ ...prev, [hw.key]: Math.max(0, (prev[hw.key] || 0) - qty) }));
+        setAvailability((prev) => ({ ...prev, [hw.key]: Math.min(hw.capacity, (prev[hw.key] || 0) + qty) }));
+      } else {
+        setProjectHardware((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) + qty }));
+        setAvailability((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) - qty }));
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    } finally {
+      closeModal();
     }
-    closeModal();
   };
 
   return (
