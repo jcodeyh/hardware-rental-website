@@ -49,23 +49,32 @@ def get_project_info():
 # Route for creating a new project
 @projects_bp.route('/create_project', methods=['POST'])
 def create_project():
-    # Extract data from request
-    data = request.get_json()
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
 
-    project_name = data.get('projectName')
-    project_description = data.get('description')
-    projectId = ObjectId()
+    data = request.get_json(silent=True) or {}
 
-    if project_name == "":
-        return jsonify({"error": "Project must have a name"}), 411
+    project_name = (data.get('projectName') or "").strip()
+    project_description = data.get('description') or ""
 
-    else:
-        result = projectsDB.createProject(project_name, projectId, project_description)
+    if not project_name:
+        return jsonify({"error": "Project must have a name"}), 400
+    
+    project_id = str(data.get('projectId') or ObjectId()).strip()
 
-    if result:
-        return jsonify({"message": "Project created successfully"}), 200
-    else:
+    result = projectsDB.createProject(
+        project_name, project_id, project_description, session["user_id"]
+    )
+
+    if result == "duplicate":
+        return jsonify({"error": "A project with that ID already exists"}), 409
+    if result != "created":
         return jsonify({"error": "Project was not created"}), 500
+
+    return jsonify({
+        "message": "Project created successfully",
+        "projectId": project_id,
+    }), 201
 # Route for joining a project
 @projects_bp.route('/join_project', methods=['POST'])
 def join_project():
