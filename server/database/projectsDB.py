@@ -19,9 +19,19 @@ def queryProject(projectId):
     return db.projects.find_one({"projectId": projectId})
 
 # Function to create a new project
-def createProject(client, projectName, projectId, description):
+def createProject(projectName, projectId, description):
     # Create a new project in the database
-    pass
+    try:
+        db.projects.insert_one({
+            "projectId": projectId,
+            "projectName": projectName,
+            "description": description,
+            "hwSets": {},
+            "users": []
+        })
+        return True
+    except:
+        return False
 
 # Function to add a user to a project
 def addUser(client, projectId, userId):

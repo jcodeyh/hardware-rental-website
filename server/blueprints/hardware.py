@@ -113,6 +113,7 @@ def check_in():
 # Route for creating a new hardware set
 @hardware_bp.route('/create_hardware_set', methods=['POST'])
 def create_hardware_set():
+    
     # Extract data from request
 
     # Connect to MongoDB

@@ -104,20 +104,6 @@ def get_user_projects_list():
     # Return a JSON response
     return jsonify({})
 
-# Route for creating a new project
-@app.route('/create_project', methods=['POST'])
-def create_project():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to create the project using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
 # Route for checking the inventory of projects
 @app.route('/api/inventory', methods=['GET'])
 def check_inventory():
