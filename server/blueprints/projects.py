@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, session
+from bson.objectid import ObjectId
 
 import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
@@ -45,6 +46,26 @@ def get_project_info():
     }
     return jsonify(response), 200
 
+# Route for creating a new project
+@projects_bp.route('/create_project', methods=['POST'])
+def create_project():
+    # Extract data from request
+    data = request.get_json()
+
+    project_name = data.get('projectName')
+    project_description = data.get('description')
+    projectId = ObjectId()
+
+    if project_name == "":
+        return jsonify({"error": "Project must have a name"}), 411
+
+    else:
+        result = projectsDB.createProject(project_name, projectId, project_description)
+
+    if result:
+        return jsonify({"message": "Project created successfully"}), 200
+    else:
+        return jsonify({"error": "Project was not created"}), 500
 # Route for joining a project
 @projects_bp.route('/join_project', methods=['POST'])
 def join_project():
