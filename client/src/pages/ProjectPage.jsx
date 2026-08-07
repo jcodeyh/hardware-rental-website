@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import authService from '../service/authService';
 
 // Simple popup modal for quantity input
 const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) => {
@@ -80,29 +81,19 @@ const ProjectPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Using the existing routes from app.py (both are GET routes)
-        const projRes = await fetch(`http://localhost:5000/get_project_info?projectId=${encodeURIComponent(projectId)}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
-        });
-        const hwRes = await fetch(`http://localhost:5000/get_all_hw_names`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-
-        if (!projRes.ok || !hwRes.ok) {
-          throw new Error('Failed to fetch data from backend');
+        // Using the authService which properly handles credentials
+        const projData = await authService.getProjectInfo(projectId);
+        if (projData.error) {
+          setError(projData.error);
+          return;
         }
-
-        const projData = await projRes.json();
-        const hwData = await hwRes.json();
+        const hwData = await authService.getAllHwNames();
 
         const hwArray = Array.isArray(hwData) ? hwData : (hwData.hardware || []);
 
         // format projData based on MongoDB projects collection schema
         const p = {
-          id: projData._id || projData.id || projectId,
+          id: projData.projectId || projData._id || projData.id || projectId,
           name: projData.projectName || projData.name || 'Unknown Project',
           description: projData.description || '',
           hardware: projData.hwSets || projData.hardware || {}
@@ -144,7 +135,7 @@ const ProjectPage = () => {
     return (
       <div style={{ padding: '2rem' }}>
         <p>Project not found: {projectId}</p>
-        <button className="btn btn-secondary" onClick={() => navigate('/')}>Go Back</button>
+        <button className="btn btn-secondary" onClick={() => navigate('/landingPage')}>Go Back</button>
       </div>
     );
   }
@@ -152,16 +143,55 @@ const ProjectPage = () => {
   const openModal = (hw, mode) => setModal({ open: true, hw, mode });
   const closeModal = () => setModal({ open: false, hw: null, mode: null });
 
-  const handleConfirm = (qty) => {
+  const handleConfirm = async (qty) => {
     const { hw, mode } = modal;
-    if (mode === 'checkin') {
-      setProjectHardware((prev) => ({ ...prev, [hw.key]: Math.max(0, (prev[hw.key] || 0) - qty) }));
-      setAvailability((prev) => ({ ...prev, [hw.key]: Math.min(hw.capacity, (prev[hw.key] || 0) + qty) }));
-    } else {
-      setProjectHardware((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) + qty }));
-      setAvailability((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) - qty }));
+    try {
+      let result;
+      if (mode === 'checkin') {
+        result = await authService.checkIn({
+          projectId: project.id,
+          hwSetName: hw.key,
+          qty
+        });
+      } else {
+        result = await authService.checkOut({
+          projectId: project.id,
+          hwSetName: hw.key,
+          qty
+        });
+      }
+
+      if (result.error) {
+        alert(`Error: ${result.error}`);
+        closeModal();
+        return;
+      }
+
+      // Update local state to reflect the confirmed change
+      if (mode === 'checkin') {
+        setProjectHardware((prev) => ({ ...prev, [hw.key]: Math.max(0, (prev[hw.key] || 0) - qty) }));
+        setAvailability((prev) => ({ ...prev, [hw.key]: Math.min(hw.capacity, (prev[hw.key] || 0) + qty) }));
+      } else {
+        setProjectHardware((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) + qty }));
+        setAvailability((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) - qty }));
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    } finally {
+      closeModal();
     }
-    closeModal();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem('username');
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
   };
 
   return (
@@ -169,13 +199,18 @@ const ProjectPage = () => {
       {/* Navbar */}
       <nav className="navbar" id="project-navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn btn-secondary" onClick={() => navigate('/')}>← Back</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/landingPage')}>← Back</button>
           <span className="navbar-brand">HaaS Portal</span>
         </div>
         <span style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#475569' }}>
           Project ID: <strong>{project.id}</strong>
         </span>
-        <span className="navbar-username">Welcome, <strong>User123</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span className="navbar-username">
+            Welcome, <strong>{(localStorage.getItem('username') && localStorage.getItem('username') !== 'undefined') ? localStorage.getItem('username') : 'User'}</strong>
+          </span>
+          <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+        </div>
       </nav>
 
       <main className="main-content" id="project-page-main">

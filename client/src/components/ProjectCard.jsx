@@ -2,8 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ProjectCard = ({ project }) => {
-  const { id, name, description, hardware } = project;
+  const { id, name, description, hardware = {} } = project;
   const navigate = useNavigate();
+
+  // Extract hardware keys (e.g., "HW set 1", "HW set 2" or "hw1", "hw2")
+  const hwEntries = Object.entries(hardware);
 
   return (
     <div
@@ -20,12 +23,15 @@ const ProjectCard = ({ project }) => {
 
       <div className="project-card-footer">
         <div className="project-hw-info">
-          <div>
-            <span className="hw-bold">HWSet 1:</span> {hardware?.hw1 || 0} / 50 units
-          </div>
-          <div>
-            <span className="hw-bold">HWSet 2:</span> {hardware?.hw2 || 0} / 100 units
-          </div>
+          {hwEntries.length === 0 ? (
+            <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>No hardware checked out</div>
+          ) : (
+            hwEntries.map(([hwName, qty]) => (
+              <div key={hwName}>
+                <span className="hw-bold">{hwName}:</span> {qty} units
+              </div>
+            ))
+          )}
         </div>
         <button
           className="btn btn-primary"
