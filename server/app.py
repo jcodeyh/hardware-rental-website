@@ -1,10 +1,11 @@
 # Import libraries and modules
 from os import getenv
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from database.db import init_indexes
+from database.db import init_indexes, db
 from config import Config
+from bson import ObjectId
 
 # Import custom modules
 from blueprints.authentication import authentication_bp
@@ -107,28 +108,40 @@ def get_user_projects_list():
 # Route for creating a new project
 @app.route('/create_project', methods=['POST'])
 def create_project():
-    # Extract data from request
+    data = request.get_json() or {}
 
-    # Connect to MongoDB
+    project_id = data.get('projectId', '').strip()
+    project_name = data.get('projectName', '').strip()
 
-    # Attempt to create the project using the projectsDB module
+    if not project_id or not project_name:
+        return jsonify({'error': 'projectId and projectName are required'}), 400
 
-    # Close the MongoDB connection
+    # Check for duplicate projectId
+    if db.projects.find_one({'projectId': project_id}):
+        return jsonify({'error': 'A project with that ID already exists'}), 409
 
-    # Return a JSON response
-    return jsonify({})
+    project = {
+        'projectId': project_id,
+        'projectName': project_name,
+        'description': data.get('description', ''),
+        'hwSets': data.get('hwSets', {}),
+        'users': []
+    }
+
+    result = db.projects.insert_one(project)
+    return jsonify({'message': 'Project created', 'id': str(result.inserted_id)}), 201
 
 # Route for checking the inventory of projects
 @app.route('/api/inventory', methods=['GET'])
 def check_inventory():
-    # Connect to MongoDB
+    projects = list(db.projects.find({}))
 
-    # Fetch all projects from the HardwareCheckout.Projects collection
+    # Serialize ObjectId fields so JSON can encode them
+    for p in projects:
+        p['_id'] = str(p['_id'])
+        p['users'] = [str(u) for u in p.get('users', [])]
 
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
+    return jsonify(projects), 200
 
 # Main entry point for the application
 if __name__ == '__main__':
