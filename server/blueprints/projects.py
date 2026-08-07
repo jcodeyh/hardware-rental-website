@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, session
-from bson.objectid import ObjectId
 
 import database.projectsDB as projectsDB
 import database.hardwareDB as hardwareDB
@@ -45,53 +44,3 @@ def get_project_info():
         ],
     }
     return jsonify(response), 200
-
-# Route for creating a new project
-@projects_bp.route('/create_project', methods=['POST'])
-def create_project():
-    if "user_id" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.get_json(silent=True) or {}
-
-    project_name = (data.get('projectName') or "").strip()
-    project_description = data.get('description') or ""
-
-    if not project_name:
-        return jsonify({"error": "Project must have a name"}), 400
-    
-    project_id = str(data.get('projectId') or ObjectId()).strip()
-
-    result = projectsDB.createProject(
-        project_name, project_id, project_description, session["user_id"]
-    )
-
-    if result == "duplicate":
-        return jsonify({"error": "A project with that ID already exists"}), 409
-    if result != "created":
-        return jsonify({"error": "Project was not created"}), 500
-
-    return jsonify({
-        "message": "Project created successfully",
-        "projectId": project_id,
-    }), 201
-# Route for joining a project
-@projects_bp.route('/join_project', methods=['POST'])
-def join_project():
-    if "user_id" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.get_json() or {}
-    project_id = data.get("projectId")
-
-    # Add the logged-in user to the project
-    result = projectsDB.addUser(
-        project_id,
-        session["user_id"]
-    )
-
-    # No project matched the given projectId
-    if result.matched_count == 0:
-        return jsonify({"error": "Project not found"}), 404
-
-    return jsonify({"message": "Project joined successfully"}), 200

@@ -25,6 +25,9 @@ export default function Signup() {
             toast.success("Sign-Up  successful")
             navigate('/login')
           }
+          if(response && response.error){
+             toast.error(response.error)
+          }
           else {
             toast.error("signup failed with some other status-code")
           }
