@@ -3,4 +3,3 @@
 /mongodb
 *.env
 *.py[cod]
-/server/tests/

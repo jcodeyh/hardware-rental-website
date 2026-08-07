@@ -3,7 +3,6 @@ import Navbar from '../components/Navbar';
 import ProjectList from '../components/ProjectList';
 import JoinProjectModal from '../components/JoinProjectModal';
 import AddProjectModal from '../components/AddProjectModal';
-import authService from '../service/authService';
 
 const LandingPage = () => {
   const [systemProjects, setSystemProjects] = useState([]);
@@ -17,14 +16,16 @@ const LandingPage = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const data = await authService.getInventory();
+        const response = await fetch('http://localhost:5000/api/inventory');
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        const data = await response.json();
         const projectsArray = Array.isArray(data) ? data : (data.projects || []);
 
         // Map MongoDB schema to frontend schema expected by ProjectCard
-        // Use projectId (string) as id — not _id (ObjectId) — so /project/:id
-        // routing matches the backend's queryProject({ projectId }) lookup.
         const formattedProjects = projectsArray.map(p => ({
-          id: p.projectId || p._id,
+          id: p._id || p.id,
           name: p.projectName || p.name,
           description: p.description,
           hardware: p.hwSets || p.hardware || {}
@@ -55,16 +56,19 @@ const LandingPage = () => {
 
   const handleCreateProject = async (newProject) => {
     try {
-      const result = await authService.createProject({
-        projectId: newProject.id,
-        projectName: newProject.name,
-        description: newProject.description,
-        hwSets: newProject.hardware
+      const response = await fetch('http://localhost:5000/create_project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: newProject.id,
+          projectName: newProject.name,
+          description: newProject.description,
+          hwSets: newProject.hardware
+        })
       });
 
-      if (result.error) {
-        alert('Could not create project: ' + result.error);
-        return;
+      if (!response.ok) {
+        throw new Error('Backend returned an error');
       }
 
       setSystemProjects([...systemProjects, newProject]);
@@ -72,7 +76,7 @@ const LandingPage = () => {
       setIsAddModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Network error: ' + err.message);
+      alert('Warning: Could not save to backend. ' + err.message);
     }
   };
 

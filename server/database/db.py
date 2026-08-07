@@ -1,11 +1,5 @@
-import logging
-
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
-
 from config import Config
-
-logger = logging.getLogger(__name__)
 
 DATABASE_URL = Config().database_url
 DATABASE_USERNAME = Config().database_username

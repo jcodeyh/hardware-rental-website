@@ -1,8 +1,4 @@
 # Import necessary libraries and modules
-import logging
-
-from pymongo.errors import DuplicateKeyError, PyMongoError
-
 from database.db import db
 import database.hardwareDB as hardwareDB
 from bson.objectid import ObjectId
@@ -26,35 +22,14 @@ def queryProject(projectId):
     return db.projects.find_one({"projectId": projectId})
 
 # Function to create a new project
-def createProject(projectName, projectId, description, creatorId=None):
-
-    try:
-        db.projects.insert_one({
-            "projectId": projectId,
-            "projectName": projectName,
-            "description": description,
-            "hwSets": {},
-            "users": [ObjectId(creatorId)] if creatorId else []
-        })
-        return "created"
-    except DuplicateKeyError:
-        return "duplicate"
-    except PyMongoError:
-        logger.exception("Could not create project %s", projectId)
-        return "error"
+def createProject(client, projectName, projectId, description):
+    # Create a new project in the database
+    pass
 
 # Function to add a user to a project
-def addUser(projectId, userId):
-    result = db.projects.update_one({
-            "projectId": projectId
-    },
-    {
-        "$addToSet": { #adds a value to an array only if that value does not already exist
-            "users":ObjectId(userId)
-        }
-    })
-
-    return result
+def addUser(client, projectId, userId):
+    # Add a user to the specified project
+    pass
 
 # Function to update hardware usage in a project
 def updateUsage(client, projectId, hwSetName):
