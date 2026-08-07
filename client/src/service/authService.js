@@ -87,14 +87,13 @@ class AuthService {
     return data;
   }
 
-  /** POST /get_user_projects_list */
-  async getUserProjects(requestObject) {
+  /** GET /get_user_projects_list */
+  async getUserProjects() {
     let url = this.baseUrl + URLs.getUserProjects;
     let response = await fetch(url, {
-      method: "POST",
+      method: "GET",
       headers: this.headers,
       credentials: "include",
-      body: JSON.stringify(requestObject),
     });
     const data = await response.json();
     return data;

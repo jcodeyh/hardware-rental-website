@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import authService from '../service/authService';
 
 const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemProjects = [], onJoin }) => {
   const [projectId, setProjectId] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanId = projectId.trim();
     if (!cleanId) {
@@ -14,25 +16,42 @@ const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemPro
       return;
     }
 
-    // Verify if project exists in system registry
+    // Verify if project exists in system registry (fetched from /api/inventory)
     const matchedProject = allSystemProjects.find(
       (p) => p.id.toLowerCase() === cleanId.toLowerCase()
     );
 
     if (!matchedProject) {
-      setError('Project ID does not exist.');
+      setError('Project ID does not exist. Check the ID and try again.');
       return;
     }
 
-    // Verify if user is already a member
+    // Verify if user is already a member locally
     if (joinedProjectIds.some((id) => id.toLowerCase() === cleanId.toLowerCase())) {
       setError('You have already joined this project.');
       return;
     }
 
     setError('');
-    onJoin(matchedProject);
-    setProjectId('');
+    setLoading(true);
+
+    try {
+      // Call the backend to add the current user to the project's users array
+      const result = await authService.joinProject({ projectId: cleanId });
+
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      onJoin(matchedProject);
+      setProjectId('');
+    } catch (err) {
+      setError('Network error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -60,18 +79,33 @@ const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemPro
               id="project-id"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              placeholder="e.g. proj-005"
+              placeholder="e.g. PROJ-001"
               required
               autoFocus
             />
           </div>
 
+          {/* Show available project IDs as a hint */}
+          {allSystemProjects.length > 0 && (
+            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>
+              Available projects: {allSystemProjects.map(p => (
+                <span
+                  key={p.id}
+                  style={{ cursor: 'pointer', color: '#2563eb', marginRight: '8px', textDecoration: 'underline' }}
+                  onClick={() => setProjectId(p.id)}
+                >
+                  {p.id}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={handleClose} id="modal-btn-cancel">
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" id="modal-btn-submit">
-              Join Project
+            <button type="submit" className="btn btn-primary" id="modal-btn-submit" disabled={loading}>
+              {loading ? 'Joining...' : 'Join Project'}
             </button>
           </div>
         </form>

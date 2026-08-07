@@ -81,29 +81,19 @@ const ProjectPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Using the existing routes from app.py (both are GET routes)
-        const projRes = await fetch(`/get_project_info?projectId=${encodeURIComponent(projectId)}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
-        });
-        const hwRes = await fetch(`/get_all_hw_names`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-
-        if (!projRes.ok || !hwRes.ok) {
-          throw new Error('Failed to fetch data from backend');
+        // Using the authService which properly handles credentials
+        const projData = await authService.getProjectInfo(projectId);
+        if (projData.error) {
+          setError(projData.error);
+          return;
         }
-
-        const projData = await projRes.json();
-        const hwData = await hwRes.json();
+        const hwData = await authService.getAllHwNames();
 
         const hwArray = Array.isArray(hwData) ? hwData : (hwData.hardware || []);
 
         // format projData based on MongoDB projects collection schema
         const p = {
-          id: projData._id || projData.id || projectId,
+          id: projData.projectId || projData._id || projData.id || projectId,
           name: projData.projectName || projData.name || 'Unknown Project',
           description: projData.description || '',
           hardware: projData.hwSets || projData.hardware || {}
@@ -145,7 +135,7 @@ const ProjectPage = () => {
     return (
       <div style={{ padding: '2rem' }}>
         <p>Project not found: {projectId}</p>
-        <button className="btn btn-secondary" onClick={() => navigate('/')}>Go Back</button>
+        <button className="btn btn-secondary" onClick={() => navigate('/landingPage')}>Go Back</button>
       </div>
     );
   }
@@ -192,18 +182,35 @@ const ProjectPage = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem('username');
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="app-container" id="project-page-container">
       {/* Navbar */}
       <nav className="navbar" id="project-navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn btn-secondary" onClick={() => navigate('/')}>← Back</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/landingPage')}>← Back</button>
           <span className="navbar-brand">HaaS Portal</span>
         </div>
         <span style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#475569' }}>
           Project ID: <strong>{project.id}</strong>
         </span>
-        <span className="navbar-username">Welcome, <strong>User123</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span className="navbar-username">
+            Welcome, <strong>{(localStorage.getItem('username') && localStorage.getItem('username') !== 'undefined') ? localStorage.getItem('username') : 'User'}</strong>
+          </span>
+          <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+        </div>
       </nav>
 
       <main className="main-content" id="project-page-main">

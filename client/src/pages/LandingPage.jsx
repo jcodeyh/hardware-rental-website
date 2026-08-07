@@ -13,43 +13,46 @@ const LandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all system projects for registry lookup
+      const systemData = await authService.getInventory();
+      const sysArray = Array.isArray(systemData) ? systemData : (systemData.projects || []);
+      const formattedSystem = sysArray.map(p => ({
+        id: p.projectId || p._id,
+        name: p.projectName || p.name,
+        description: p.description,
+        hardware: p.hwSets || p.hardware || {}
+      }));
+      setSystemProjects(formattedSystem);
+
+      // Fetch ONLY projects the logged-in user has joined or created
+      const userData = await authService.getUserProjects();
+      const userArray = Array.isArray(userData) ? userData : (userData.projects || []);
+      const formattedUser = userArray.map(p => ({
+        id: p.projectId || p._id,
+        name: p.projectName || p.name,
+        description: p.description,
+        hardware: p.hwSets || p.hardware || {}
+      }));
+      setProjects(formattedUser);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const data = await authService.getInventory();
-        const projectsArray = Array.isArray(data) ? data : (data.projects || []);
-
-        // Map MongoDB schema to frontend schema expected by ProjectCard
-        // Use projectId (string) as id — not _id (ObjectId) — so /project/:id
-        // routing matches the backend's queryProject({ projectId }) lookup.
-        const formattedProjects = projectsArray.map(p => ({
-          id: p.projectId || p._id,
-          name: p.projectName || p.name,
-          description: p.description,
-          hardware: p.hwSets || p.hardware || {}
-        }));
-
-        setSystemProjects(formattedProjects);
-        setProjects(formattedProjects);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProjects();
   }, []);
 
-  const handleJoinProject = (newProject) => {
-    // Check if project already exists to avoid duplicates
-    if (projects.some((p) => p.id.toLowerCase() === newProject.id.toLowerCase())) {
-      alert(`A project with ID "${newProject.id}" is already in your dashboard.`);
-      return;
-    }
-    setProjects([...projects, newProject]);
+  const handleJoinProject = async (newProject) => {
+    // Re-fetch user projects from backend after joining
+    await fetchProjects();
     setIsJoinModalOpen(false);
   };
 
@@ -67,8 +70,8 @@ const LandingPage = () => {
         return;
       }
 
-      setSystemProjects([...systemProjects, newProject]);
-      setProjects([...projects, newProject]);
+      // Re-fetch user projects from backend after creating
+      await fetchProjects();
       setIsAddModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -97,6 +100,12 @@ const LandingPage = () => {
           <p>Loading projects...</p>
         ) : error ? (
           <p>Error: {error}</p>
+        ) : projects.length === 0 ? (
+          <div style={{ padding: '24px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+            <p style={{ margin: 0, color: '#64748b' }}>
+              You have not joined or created any projects yet. Click <strong>Join Project</strong> or <strong>Add New Project</strong> above to get started!
+            </p>
+          </div>
         ) : (
           <ProjectList projects={projects} />
         )}

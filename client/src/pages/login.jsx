@@ -8,35 +8,33 @@ export default function Login() {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  // const [loading, setLoading] = useState(false)
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   async function handleSubmit(e) {
     e.preventDefault();
     let requestObject = {
       "username" : userName,
       "password" :password,
     }
-    // navigate('/landingPage')
-    // setError("");
     try{
       let response = await AuthService.login(requestObject)
-      localStorage.setItem("username", response.userName)
-     
       if(response && response.data){
         console.log("Logged in successfully")
+        localStorage.setItem("username", response.data)
+        login(response.data) // set token in AuthContext
         navigate('/landingPage')
       }
       else {
-        toast.error("Login failed with some other status-code")
+        toast.error("Login failed: " + (response.error || "Invalid credentials"))
       }
     }
     catch (error) {
-    // console.log(error);
-    // toast.error("Login failed");
-  }
+      toast.error("Login failed: network error");
+    }
   }
 
-  function clearForm (){
+  function clearForm (e){
     e.preventDefault();
     setUserName('')
     setPassword('')

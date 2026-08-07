@@ -5,7 +5,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from database.db import init_indexes, db
 from config import Config
-from bson import ObjectId
 
 # Import custom modules
 from blueprints.authentication import authentication_bp
@@ -15,18 +14,16 @@ from blueprints.hardware import hardware_bp
 
 # Initialize Flask
 app = Flask(__name__)
-# Origins allowed to call this API, comma-separated.
 
+# Origins allowed to call this API, comma-separated.
+# Supports both 5173 (Vite default) and 8080
 allowed_origins = [
     o.strip()
-    for o in getenv("CORS_ORIGINS", "http://localhost:8080").split(",")
+    for o in getenv("CORS_ORIGINS", "http://localhost:5173, http://localhost:8080").split(",")
     if o.strip()
 ]
 
 CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
-
-# cors = CORS(app, resources={r"/*": {"origins": "*"}})  # allow the client to call this API
-# app.config['CORS_HEADERS'] = 'Content-Type'
 
 app.register_blueprint(authentication_bp)  # Register the authentication blueprint
 app.register_blueprint(projects_bp)  # Register the projects blueprint
@@ -49,89 +46,33 @@ app.config.update(
 
 init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
 
-# Route for the main page (Work in progress)
+# Route for the main page
 @app.route('/main')
 def mainPage():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Fetch user projects using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
     return jsonify({})
 
 # Route for adding a new user
 @app.route('/add_user', methods=['POST'])
 def add_user():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to add the user using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
     return jsonify({})
-
-# Route for getting the list of user projects
-@app.route('/get_user_projects_list', methods=['POST'])
-def get_user_projects_list():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Fetch the user's projects using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for creating a new project
-@app.route('/create_project', methods=['POST'])
-def create_project():
-    data = request.get_json() or {}
-
-    project_id = data.get('projectId', '').strip()
-    project_name = data.get('projectName', '').strip()
-
-    if not project_id or not project_name:
-        return jsonify({'error': 'projectId and projectName are required'}), 400
-
-    # Check for duplicate projectId
-    if db.projects.find_one({'projectId': project_id}):
-        return jsonify({'error': 'A project with that ID already exists'}), 409
-
-    project = {
-        'projectId': project_id,
-        'projectName': project_name,
-        'description': data.get('description', ''),
-        'hwSets': data.get('hwSets', {}),
-        'users': []
-    }
-
-    result = db.projects.insert_one(project)
-    return jsonify({'message': 'Project created', 'id': str(result.inserted_id)}), 201
 
 # Route for checking the inventory of projects
+# NOTE: /create_project, /join_project, and /get_user_projects_list are handled by projects_bp
 @app.route('/api/inventory', methods=['GET'])
 def check_inventory():
-    projects = list(db.projects.find({}))
+    try:
+        projects = list(db.projects.find({}))
+        # Serialize ObjectId fields so JSON can encode them
+        for p in projects:
+            p['_id'] = str(p['_id'])
+            if hasattr(p.get('projectId'), '__class__') and p['projectId'].__class__.__name__ == 'ObjectId':
+                p['projectId'] = str(p['projectId'])
+            p['users'] = [str(u) for u in p.get('users', [])]
+        return jsonify(projects), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-    # Serialize ObjectId fields so JSON can encode them
-    for p in projects:
-        p['_id'] = str(p['_id'])
-        p['users'] = [str(u) for u in p.get('users', [])]
-
-    return jsonify(projects), 200
-
-# Main entry point for the application
+# Main entry point for the application — configured on port 8000
 if __name__ == '__main__':
-    init_indexes()  # Ensure required indexes exist; runs once at app startup, not on every import
-    app.run()
-
-
+    init_indexes()
+    app.run(debug=True, port=8000)
