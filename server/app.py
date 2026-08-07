@@ -51,9 +51,37 @@ init_indexes()  # Ensure required indexes exist; runs once at app startup, not o
 def mainPage():
     return jsonify({})
 
+# Route for joining a project
+@app.route('/join_project', methods=['POST'])
+def join_project():
+    # Extract data from request
+
+    # Connect to MongoDB
+
+    # Attempt to join the project using the usersDB module
+
+    # Close the MongoDB connection
+
+    # Return a JSON response
+    return jsonify({})
+
 # Route for adding a new user
 @app.route('/add_user', methods=['POST'])
 def add_user():
+    return jsonify({})
+
+# Route for creating a new project
+@app.route('/create_project', methods=['POST'])
+def create_project():
+    # Extract data from request
+
+    # Connect to MongoDB
+
+    # Attempt to create the project using the projectsDB module
+
+    # Close the MongoDB connection
+
+    # Return a JSON response
     return jsonify({})
 
 # Route for checking the inventory of projects

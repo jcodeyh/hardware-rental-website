@@ -117,3 +117,4 @@ def join_project():
         return jsonify({"error": "Project not found"}), 404
 
     return jsonify({"message": "Project joined successfully"}), 200
+    return jsonify(response), 200
