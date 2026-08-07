@@ -18,11 +18,9 @@ client = MongoClient(URL)  # Connect to MongoDB using the constructed URL
 db = client[Config().database_name]
 
 def init_indexes():
-    # Index creation is a startup nicety, not a precondition for serving. If
-    # Mongo is briefly unreachable, log it and carry on -- letting this raise
-    # kills the process at import time, so the container crashloops instead of
-    # coming up and recovering once the database is back.
     try:
         db.users.create_index("username", unique=True)
+        db.projects.create_index("projectId", unique=True)
+        db.hardware.create_index("hwName", unique=True)
     except PyMongoError:
-        logger.exception("Could not create indexes at startup")
+        logger.exception("Could not create indexes")

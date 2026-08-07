@@ -1,6 +1,7 @@
 services:
   server:
     build: ./server
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--reload", "app:app"]
     ports:
       - "8000:8000"
     volumes:
