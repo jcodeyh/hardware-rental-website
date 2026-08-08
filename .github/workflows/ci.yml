@@ -18,9 +18,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      # F-checks are correctness, not style: unused imports, redefinitions,
-      # undefined names. These block the build -- an unregistered blueprint
-      # shows up here as "imported but unused".
       - run: flake8 . --select=F
       # Everything else (line length, whitespace) is advisory only.
       - run: flake8 . --extend-ignore=F --exit-zero
@@ -47,9 +44,6 @@ jobs:
       - run: docker build -t frontend-test ./client
 
   deploy:
-  # Only main deploys. The federated credential's subject is scoped to
-  # refs/heads/main, so a run on any other branch cannot authenticate anyway --
-  # this just fails fast instead of failing at the login step.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [backend, frontend]
     runs-on: ubuntu-latest
@@ -103,7 +97,8 @@ jobs:
         run: az containerapp update --name $SERVER_APP --resource-group $RG --image $ACR.azurecr.io/server:${{ github.sha }}
 
       - name: Deploy client
-        run: az containerapp update --name $CLIENT_APP --resource-group $RG --image $ACR.azurecr.io/client:${{ github.sha }}
+        # min replicas at 1 keeps application running
+        run: az containerapp update --name $CLIENT_APP --resource-group $RG --image $ACR.azurecr.io/client:${{ github.sha }} --min-replicas 1
 
       - name: Smoke test
         run: |
