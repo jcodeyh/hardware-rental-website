@@ -103,7 +103,8 @@ jobs:
         run: az containerapp update --name $SERVER_APP --resource-group $RG --image $ACR.azurecr.io/server:${{ github.sha }}
 
       - name: Deploy client
-        run: az containerapp update --name $CLIENT_APP --resource-group $RG --image $ACR.azurecr.io/client:${{ github.sha }}
+        # min replicas at 1 keeps application running
+        run: az containerapp update --name $CLIENT_APP --resource-group $RG --image $ACR.azurecr.io/client:${{ github.sha }} --min-replicas 1
 
       - name: Smoke test
         run: |
