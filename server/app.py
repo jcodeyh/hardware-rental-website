@@ -1,7 +1,7 @@
 # Import libraries and modules
 from os import getenv
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 from database.db import init_indexes, db
 from config import Config
@@ -31,11 +31,6 @@ app.register_blueprint(hardware_bp)  # Register the hardware blueprint
 
 app.secret_key = Config().session_pass  # Set secret key for session management
 
-# In Azure the client and API are on different hosts, so the session cookie is
-# cross-site. Browsers only send a cross-site cookie when it is SameSite=None
-# AND Secure -- and they reject SameSite=None without Secure outright.
-# Locally both run on localhost (same site, plain http), where Lax is correct
-# and Secure would stop the cookie being set at all. Hence the env switch.
 cross_site_session = getenv("CROSS_SITE_SESSION", "false").lower() == "true"
 app.config.update(
     SESSION_COOKIE_SAMESITE="None" if cross_site_session else "Lax",
@@ -49,39 +44,6 @@ init_indexes()  # Ensure required indexes exist; runs once at app startup, not o
 # Route for the main page
 @app.route('/main')
 def mainPage():
-    return jsonify({})
-
-# Route for joining a project
-@app.route('/join_project', methods=['POST'])
-def join_project():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to join the project using the usersDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
-    return jsonify({})
-
-# Route for adding a new user
-@app.route('/add_user', methods=['POST'])
-def add_user():
-    return jsonify({})
-
-# Route for creating a new project
-@app.route('/create_project', methods=['POST'])
-def create_project():
-    # Extract data from request
-
-    # Connect to MongoDB
-
-    # Attempt to create the project using the projectsDB module
-
-    # Close the MongoDB connection
-
-    # Return a JSON response
     return jsonify({})
 
 # Route for checking the inventory of projects
