@@ -85,21 +85,6 @@ const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemPro
             />
           </div>
 
-          {/* Show available project IDs as a hint */}
-          {allSystemProjects.length > 0 && (
-            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>
-              Available projects: {allSystemProjects.map(p => (
-                <span
-                  key={p.id}
-                  style={{ cursor: 'pointer', color: '#2563eb', marginRight: '8px', textDecoration: 'underline' }}
-                  onClick={() => setProjectId(p.id)}
-                >
-                  {p.id}
-                </span>
-              ))}
-            </div>
-          )}
-
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={handleClose} id="modal-btn-cancel">
               Cancel
