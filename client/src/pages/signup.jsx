@@ -9,8 +9,6 @@ export default function Signup() {
   const navigate = useNavigate();
   async function handleSubmit(e) {
     e.preventDefault();
-    // toast.success("Sign-Up Functionality");
-    // navigate('/login')
 
      e.preventDefault();
         let requestObject = {
@@ -25,7 +23,7 @@ export default function Signup() {
             toast.success("Sign-Up  successful")
             navigate('/login')
           }
-          if(response && response.error){
+          else if(response && response.error){
              toast.error(response.error)
           }
           else {
@@ -33,8 +31,7 @@ export default function Signup() {
           }
         }
         catch (error) {
-        // console.log(error);
-        // toast.error("signup failed");
+
       }
   }
 
