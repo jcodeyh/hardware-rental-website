@@ -2,6 +2,12 @@
 .dash-header { display: flex; justify-content: space-between; align-items: baseline; }
 .dash-select { display: block; margin: 8px 0 20px; font-weight: 600; }
 .dash-select select { margin-left: 8px; padding: 4px 8px; }
+.dash-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 8px 0 20px; }
+.dash-filters .dash-select { margin: 0; }
+.dash-filters label { display: flex; align-items: center; margin: 0; font-size: inherit; font-weight: 600; }
+.dash-filters input[type="date"] { width: auto; margin: 0 0 0 8px; padding: 3px 6px; }
+.dash-filters button { width: auto; height: auto; }
+.dash-range { margin: -8px 0 16px; color: #6c757d; }
 .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .dash-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 16px; overflow-x: auto; }
 .dash-card h2 { font-size: 1.1rem; margin-bottom: 12px; }

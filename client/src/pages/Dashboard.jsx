@@ -25,6 +25,16 @@ const usd = (v) =>
     ? "Not available"
     : v.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
+const longDay = (iso) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+function rangeText(from, to) {
+  if (from && to) return `Showing ${longDay(from)} to ${longDay(to)}`;
+  if (from) return `Showing ${longDay(from)} onward`;
+  if (to) return `Showing through ${longDay(to)}`;
+  return "Showing all dates";
+}
+
 function CategoryBars({ rows }) {
   const max = Math.max(...rows.map((r) => r.purchases), 1);
   return (
@@ -42,7 +52,7 @@ function CategoryBars({ rows }) {
   );
 }
 
-function BudgetContextPanel() {
+function BudgetContextPanel({ wide }) {
   const [item, setItem] = useState("Laptop computer");
   const [quantity, setQuantity] = useState(10);
   const [result, setResult] = useState(null);
@@ -61,7 +71,7 @@ function BudgetContextPanel() {
   const cell = (v) => (v && typeof v === "object" ? usd(v.typical) : usd(v));
 
   return (
-    <section className="dash-card">
+    <section className={wide ? "dash-card dash-wide" : "dash-card"}>
       <h2>Budget context</h2>
       <form className="dash-budget-form" onSubmit={submit}>
         <input value={item} onChange={(e) => setItem(e.target.value)} placeholder="Item description" aria-label="Item description" />
@@ -96,6 +106,11 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     callGateway("/api/data/governments").then(({ body }) => {
@@ -107,9 +122,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!selected) return;
+    let ignore = false;
+    const params = new URLSearchParams();
+    if (dateFrom) params.set("from", dateFrom);
+    if (dateTo) params.set("to", dateTo);
+    const query = params.toString();
     setLoading(true);
     setError("");
-    callGateway(`/api/data/governments/${encodeURIComponent(selected)}/summary`).then(({ body }) => {
+    callGateway(`/api/data/governments/${encodeURIComponent(selected)}/summary${query ? `?${query}` : ""}`).then(({ body }) => {
+      if (ignore) return;
       setLoading(false);
       if (!body.success) {
         setSummary(null);
@@ -117,9 +138,34 @@ export default function Dashboard() {
       }
       setSummary(body);
     });
-  }, [selected]);
+    return () => {
+      ignore = true;
+    };
+  }, [selected, dateFrom, dateTo, attempt]);
 
+  const applyDates = (e) => {
+    e.preventDefault();
+    setDateFrom(draftFrom);
+    setDateTo(draftTo);
+    setAttempt((n) => n + 1);
+  };
+
+  const selectGovernment = (government) => {
+    setSelected(government);
+    setDraftFrom(dateFrom);
+    setDraftTo(dateTo);
+  };
+
+  const clearDates = () => {
+    setDraftFrom("");
+    setDraftTo("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  const bounds = governments.find((g) => g.government === selected);
   const empty = summary && summary.topCategories.length === 0;
+  const showSummary = !loading && summary && !empty;
   const priceLabel = summary?.priceBasis === "payment" ? "payment" : "unit price";
 
   return (
@@ -129,53 +175,67 @@ export default function Dashboard() {
         <Link to="/login">Log in</Link>
       </header>
 
-      <label className="dash-select">
-        Government{" "}
-        <select value={selected} onChange={(e) => setSelected(e.target.value)} disabled={!governments.length}>
-          {governments.map((g) => (
-            <option key={g.government} value={g.government}>{g.government}</option>
-          ))}
-        </select>
-      </label>
+      <form className="dash-filters" onSubmit={applyDates}>
+        <label className="dash-select">
+          Government{" "}
+          <select value={selected} onChange={(e) => selectGovernment(e.target.value)} disabled={!governments.length}>
+            {governments.map((g) => (
+              <option key={g.government} value={g.government}>{g.government}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          From{" "}
+          <input type="date" value={draftFrom} min={bounds?.from} max={bounds?.to} onChange={(e) => setDraftFrom(e.target.value)} />
+        </label>
+        <label>
+          To{" "}
+          <input type="date" value={draftTo} min={bounds?.from} max={bounds?.to} onChange={(e) => setDraftTo(e.target.value)} />
+        </label>
+        <button className="btn btn-primary btn-sm" type="submit" disabled={!selected}>Apply</button>
+        <button className="btn btn-outline-secondary btn-sm" type="button" onClick={clearDates} disabled={!draftFrom && !draftTo && !dateFrom && !dateTo}>Clear</button>
+      </form>
 
+      {!loading && summary && <p className="dash-range">{rangeText(summary.from, summary.to)}</p>}
       {error && <p className="dash-error">{error}</p>}
       {loading && <p>Loading {selected}… (the database may take up to a minute to wake up)</p>}
       {!loading && empty && <p className="dash-empty">{summary.message || `No purchase data for ${selected}.`}</p>}
 
-      {!loading && summary && !empty && (
-        <div className="dash-grid">
-          <section className="dash-card dash-wide">
-            <h2>Top categories by number of purchases</h2>
-            <CategoryBars rows={summary.topCategories} />
-          </section>
+      <div className="dash-grid">
+        {showSummary && (
+          <>
+            <section className="dash-card dash-wide">
+              <h2>Top categories by number of purchases</h2>
+              <CategoryBars rows={summary.topCategories} />
+            </section>
 
-          <section className="dash-card dash-wide">
-            <h2>Typical {priceLabel}</h2>
-            <table className="table table-sm">
-              <thead><tr><th>Category</th><th>Low (25th)</th><th>Typical (median)</th><th>High (75th)</th><th>Purchases</th></tr></thead>
-              <tbody>
-                {summary.typicalPrices.map((p) => (
-                  <tr key={p.category}>
-                    <td>{p.category}</td><td>{usd(p.low)}</td><td>{usd(p.median)}</td><td>{usd(p.high)}</td><td>{p.purchases}</td>
-                  </tr>
+            <section className="dash-card dash-wide">
+              <h2>Typical {priceLabel}</h2>
+              <table className="table table-sm">
+                <thead><tr><th>Category</th><th>Low (25th)</th><th>Typical (median)</th><th>High (75th)</th><th>Purchases</th></tr></thead>
+                <tbody>
+                  {summary.typicalPrices.map((p) => (
+                    <tr key={p.category}>
+                      <td>{p.category}</td><td>{usd(p.low)}</td><td>{usd(p.median)}</td><td>{usd(p.high)}</td><td>{p.purchases}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="dash-card">
+              <h2>Top vendors</h2>
+              <ol>
+                {summary.topVendors.map((v) => (
+                  <li key={v.vendor}>{v.vendor} <small>({v.purchases.toLocaleString()} purchases, {usd(v.totalAmount)})</small></li>
                 ))}
-              </tbody>
-            </table>
-          </section>
+              </ol>
+            </section>
+          </>
+        )}
 
-          <section className="dash-card">
-            <h2>Top vendors</h2>
-            <ol>
-              {summary.topVendors.map((v) => (
-                <li key={v.vendor}>{v.vendor} <small>({v.purchases.toLocaleString()} purchases, {usd(v.totalAmount)})</small></li>
-              ))}
-            </ol>
-          </section>
-
-          <BudgetContextPanel />
-        </div>
-      )}
-      {(!summary || empty) && !loading && <BudgetContextPanel />}
+        <BudgetContextPanel wide={!showSummary} />
+      </div>
     </div>
   );
 }
