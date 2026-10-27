@@ -1,5 +1,5 @@
 # Gateway routes (requirements 10.2). Upstreams come from environment variables:
-#   CLIENT_UPSTREAM  front end         e.g. https://hardware-rental-client.internal.<env-domain>
+#   CLIENT_UPSTREAM  front end         e.g. http://127.0.0.1:3000 (same Container App in Azure)
 #   SERVER_UPSTREAM  Flask app server  (Mongo-backed login/projects/hardware API)
 #   DATA_UPSTREAM    dashboard data service
 # Prefixes are stripped before proxying (/api/data/x -> /x).

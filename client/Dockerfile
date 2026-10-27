@@ -21,7 +21,7 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Matches the Container App ingress targetPort
-EXPOSE 8080
+# Matches `listen` in nginx.conf; the gateway reaches it on localhost:3000
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]

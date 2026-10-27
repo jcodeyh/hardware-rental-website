@@ -77,7 +77,7 @@ jobs:
   deploy:
     # The federated credential's subject is scoped to refs/heads/main, so only
     # main can log in. DEPLOY_ENABLED (a repo variable) stays unset until the
-    # Container Apps and the deploy identity exist.
+    # Container App and the deploy identity exist.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_ENABLED == 'true'
     needs: [images]
     runs-on: ubuntu-latest
@@ -87,6 +87,9 @@ jobs:
       contents: read
     env:
       RG: Data_Management
+      # One Container App, three containers. Only the gateway container has
+      # ingress; client and dataservice are reached over localhost.
+      APP: hardware-rental
     steps:
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -95,17 +98,16 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy the three apps
+      - name: Deploy the three containers
         run: |
+          # Container names in the app match the image names.
           for name in client dataservice gateway; do
-            app=hardware-rental-$name
-            [ "$name" = dataservice ] && app=hardware-rental-data
-            az containerapp update -n "$app" -g "$RG" --image "$IMAGE_PREFIX/$name:${{ github.sha }}" -o none
+            az containerapp update -n "$APP" -g "$RG" --container-name "$name" --image "$IMAGE_PREFIX/$name:${{ github.sha }}" -o none
           done
 
       - name: Smoke test through the gateway
         run: |
-          GATEWAY=https://$(az containerapp show -n hardware-rental-gateway -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
+          GATEWAY=https://$(az containerapp show -n "$APP" -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
           echo "Gateway: $GATEWAY"
           # Apps scale to zero and the serverless database pauses, so the first
           # hit can take a minute or more; retry instead of failing on a cold start.
