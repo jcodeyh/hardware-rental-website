@@ -1,0 +1,80 @@
+# Gateway routes (requirements 10.2). Upstreams come from environment variables:
+#   CLIENT_UPSTREAM  front end         e.g. https://hardware-rental-client.internal.<env-domain>
+#   SERVER_UPSTREAM  Flask app server  (Mongo-backed login/projects/hardware API)
+#   DATA_UPSTREAM    dashboard data service
+# Prefixes are stripped before proxying (/api/data/x -> /x).
+
+resolver ${NGINX_LOCAL_RESOLVERS} valid=30s ipv6=off;
+
+server {
+    listen 8080;
+    server_name _;
+    client_max_body_size 1m;
+
+    # Variables make nginx resolve the upstream per request instead of at start-up.
+    set $client_upstream ${CLIENT_UPSTREAM};
+    set $server_upstream ${SERVER_UPSTREAM};
+    set $data_upstream   ${DATA_UPSTREAM};
+
+    # Host stays the upstream's own name ($proxy_host, nginx's default), which is
+    # what Container Apps' internal ingress routes on. SNI for https upstreams:
+    proxy_ssl_server_name on;
+    proxy_http_version 1.1;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_read_timeout 120s;   # serverless SQL can take ~60 s to resume
+
+    location = /healthz {
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Our dashboard data service
+    location /api/data/ {
+        rewrite ^/api/data/(.*)$ /$1 break;
+        proxy_pass $data_upstream;
+        error_page 502 503 504 = @service_down;
+    }
+
+    # The original Flask app server (login, projects, hardware), same origin as the
+    # front end, so session cookies work without cross-site settings.
+    location /api/app/ {
+        rewrite ^/api/app/(.*)$ /$1 break;
+        proxy_pass $server_upstream;
+        error_page 502 503 504 = @service_down;
+    }
+
+    # JSON instead of nginx's HTML error page, so the front end can show `message`
+    location @service_down {
+        default_type application/json;
+        return 503 '{"success":false,"message":"The service is starting or unavailable. Try again in a minute."}';
+    }
+
+    # ---- Projects team: fixed sample until their service runs (10.3) ----
+    # PLACEHOLDER SHAPE: built from the field names in requirements 11.3/17.
+    # Replace the body with the verbatim example from Valentina's contract.
+    # When their service is live, replace this block with a proxy_pass.
+    location = /api/projects/get_budget_context {
+        default_type application/json;
+        add_header X-Sample-Data true always;
+        add_header Cache-Control no-store always;
+        return 200 '{"success":true,"message":"Sample response from the gateway. The Projects team service is not connected yet.","itemDescription":"Laptop computer","quantity":10,"category":"Microcomputers, Handheld, Laptop, and Notebook","confidence":0.92,"estimatedCost":{"low":7800.00,"typical":9120.00,"high":11500.00},"unitPrice":{"Austin":{"low":780.00,"typical":912.00,"high":1150.00},"Dallas":"not available","Texas":"not available"},"departmentSpend":{"Austin":61234.50,"Dallas":48210.00,"Texas":"not available"}}';
+    }
+
+    # Other teams' services are not running yet (10.3)
+    location ~ ^/api/(projects|users|hardware)/ {
+        default_type application/json;
+        add_header X-Sample-Data true always;
+        return 503 '{"success":false,"message":"This team service is not connected to the gateway yet."}';
+    }
+
+    location /api/ {
+        default_type application/json;
+        return 404 '{"success":false,"message":"Unknown API route."}';
+    }
+
+    # Front end (React single-page app)
+    location / {
+        proxy_pass $client_upstream;
+    }
+}
