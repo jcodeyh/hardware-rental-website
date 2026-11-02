@@ -1,10 +1,5 @@
-grpcio
-grpcio-tools
-grpcio-health-checking
-fastapi
-uvicorn[standard]
-httpx
-pydantic-settings
-python-dotenv
-pytest
-pytest-asyncio
+grpcio>=1.70,<2
+grpcio-tools>=1.70,<2
+protobuf>=6,<8
+httpx>=0.28,<1
+pydantic-settings>=2,<3
