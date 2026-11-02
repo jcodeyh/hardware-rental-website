@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package projects.v1;
+
+service ProjectsService {
+  rpc CreateProject(CreateProjectRequest) returns (OperationResponse);
+  rpc JoinProject(ProjectMembershipRequest) returns (OperationResponse);
+  rpc LeaveProject(ProjectMembershipRequest) returns (OperationResponse);
+  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+}
+
+message HardwareItem {
+  string hardware_id = 1;
+  string hardware_name = 2;
+  int32 capacity = 3;
+}
+
+message Project {
+  string project_id = 1;
+  string project_name = 2;
+  string project_desc = 3;
+  string project_creator_id = 4;
+  int64 budget = 5;
+  repeated HardwareItem hardware_list = 6;
+  repeated string joined_users = 7;
+}
+
+message CreateProjectRequest {
+  string project_id = 1;
+  string project_name = 2;
+  optional string project_desc = 3;
+  string project_creator_id = 4;
+  int64 budget = 5;
+  repeated HardwareItem hardware_list = 6;
+}
+
+message ProjectMembershipRequest {
+  string project_id = 1;
+  string project_creator_id = 2;
+  string user_id = 3;
+}
+
+message SearchProjectsRequest {
+  optional string project_id = 1;
+  optional string project_creator_id = 2;
+}
+
+message ProjectSummary {
+  string project_id = 1;
+  string project_name = 2;
+  string project_creator_id = 3;
+}
+
+message SearchProjectsResponse {
+  repeated ProjectSummary project_list = 1;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message GetProjectResponse {
+  Project project_info = 1;
+}
+
+message OperationResponse {
+  bool success = 1;
+  string error_message = 2;
+}

@@ -1,0 +1,35 @@
+
+syntax = "proto3";
+
+package hardware.v1;
+
+service HardwareService {
+  rpc ListHardware(ListHardwareRequest) returns (ListHardwareResponse);
+}
+
+message ListHardwareRequest {
+  int32 page = 1;
+  int32 size = 2;
+  string category = 3;
+  string status = 4;
+}
+
+message HardwareItem {
+  string id = 1;
+  string name = 2;
+  string category = 3;
+  string asset_tag = 4;
+  string status = 5;
+  int32 total = 6;
+  int32 out = 7;
+  int32 reserved = 8;
+  int32 version = 9;
+  int32 available = 10;
+}
+
+message ListHardwareResponse {
+  repeated HardwareItem items = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
