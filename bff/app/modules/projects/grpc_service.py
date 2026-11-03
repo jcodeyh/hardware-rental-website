@@ -30,44 +30,49 @@ HTTP_TO_GRPC = {
 
 
 class ProjectsService(pb_grpc.ProjectsServiceServicer):
+
     def __init__(self, client):
         self.client = client
 
     async def _execute(self, context, operation):
         try:
             return await operation()
+
         except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
             code = HTTP_TO_GRPC.get(
-                exc.response.status_code,
+                status,
                 grpc.StatusCode.UNKNOWN,
             )
             await context.abort(
                 code,
-                f"Projects API returned HTTP {exc.response.status_code}",
+                f"Projects API returned HTTP {status}",
             )
+
         except httpx.TimeoutException:
             await context.abort(
                 grpc.StatusCode.DEADLINE_EXCEEDED,
                 "Projects API request timed out",
             )
+
         except httpx.RequestError:
             await context.abort(
                 grpc.StatusCode.UNAVAILABLE,
                 "Projects API is unavailable",
             )
+
         except KeyError:
             await context.abort(
-                grpc.StatusCode.NOT_FOUND,
-                "Project not found",
+                grpc.StatusCode.INTERNAL,
+                "Unexpected Projects API response",
             )
+
         except ValueError as exc:
-            message = str(exc)
-            code = (
-                grpc.StatusCode.ALREADY_EXISTS
-                if "already" in message.lower()
-                else grpc.StatusCode.FAILED_PRECONDITION
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                str(exc),
             )
-            await context.abort(code, message)
+
         except (TypeError, OverflowError):
             await context.abort(
                 grpc.StatusCode.INTERNAL,
@@ -91,31 +96,49 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 "Invalid project fields",
             )
+
+        async def operation():
+            result = await self.client.create_project(
+                create_to_json(request)
+            )
+
+            return pb.OperationResponse(
+                success=result["success"],
+                error_message=result.get("errorMessage", ""),
+            )
+
         return await self._execute(context, operation)
 
     async def JoinProject(self, request, context):
         return await self._membership(
-            request, context, self.client.join_project
+            request,
+            context,
+            self.client.join_project,
         )
 
     async def LeaveProject(self, request, context):
         return await self._membership(
-            request, context, self.client.leave_project
+            request,
+            context,
+            self.client.leave_project,
         )
 
     async def _membership(self, request, context, action):
         if not all([
+            request.project_id.strip(),
             request.org_id.strip(),
-            request.project_creator_id.strip(),
             request.user_id.strip(),
         ]):
             await context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
-                "Project and user IDs are required",
+                "Project ID, Organization ID and User ID are required",
             )
 
         async def operation():
-            result = await action(membership_to_json(request))
+            result = await action(
+                membership_to_json(request)
+            )
+
             return pb.OperationResponse(
                 success=result["success"],
                 error_message=result.get("errorMessage", ""),
@@ -128,6 +151,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
             result = await self.client.search_projects(
                 search_to_json(request)
             )
+
             return pb.SearchProjectsResponse(
                 project_list=[
                     summary_to_proto(item)
@@ -137,25 +161,26 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
 
         return await self._execute(context, operation)
 
-        async def GetProject(self, request, context):
-            if not request.project_id.strip():
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    "Project ID is required",
-                )
-            if not request.project_id.strip() or not request.org_id.strip():
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    "Project ID and Organization ID are required",
-                )
+    async def GetProject(self, request, context):
+        if (
+            not request.project_id.strip()
+            or not request.org_id.strip()
+        ):
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Project ID and Organization ID are required",
+            )
 
-            async def operation():
-                result = await self.client.get_project(
-                    request.project_id,
-                    request.org_id,
-                )
-                return pb.GetProjectResponse(
-                    project_info=project_to_proto(result["projectInfo"])
-                )
+        async def operation():
+            result = await self.client.get_project(
+                request.project_id,
+                request.org_id,
+            )
 
-            return await self._execute(context, operation)
+            return pb.GetProjectResponse(
+                project_info=project_to_proto(
+                    result["projectInfo"]
+                )
+            )
+
+        return await self._execute(context, operation)
