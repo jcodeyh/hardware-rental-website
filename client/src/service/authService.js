@@ -5,7 +5,7 @@ class AuthService {
   constructor() {
     // Vite inlines VITE_* at build time; falls back to the local Flask
     // server so `npm run dev` keeps working with no extra setup.
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hardware-rental.wonderfulsky-6d5c5842.westus.azurecontainerapps.io";
     this.headers = { "Content-Type": "application/json" };
   }
 

@@ -1,7 +1,7 @@
 const URLs = {
   // Auth
   "login"           : "/login",
-  "signUp"          : "/signup",
+  "signUp"          : "/api/users/register",
   "logout"          : "/logout",
 
   // Projects
@@ -17,4 +17,4 @@ const URLs = {
   "getInventory"    : "/api/inventory",
 };
 
-export default URLs;
+export default URLs;
