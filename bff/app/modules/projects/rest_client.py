@@ -50,11 +50,16 @@ class ProjectsRestClient:
             "POST", "projects/search_project", json=filters
         )
 
-    async def get_project(self, project_id: str) -> dict:
-        encoded_id = quote(project_id, safe="")
-        return await self._request(
-            "GET", f"projects/{encoded_id}"
-        )
+    async def get_project(self, project_id: str, org_id: str) -> dict:
+        from urllib.parse import quote
 
+        encoded_id = quote(project_id, safe="")
+
+        return await self._request(
+            "GET",
+            f"projects/{encoded_id}",
+            params={"orgId": org_id},
+        )
+    
     async def close(self) -> None:
         await self.client.aclose()

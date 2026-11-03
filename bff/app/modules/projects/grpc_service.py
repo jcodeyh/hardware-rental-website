@@ -76,13 +76,13 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
 
     async def CreateProject(self, request, context):
         if (
-            not request.project_id.strip()
+            not request.creator_id.strip()
+            or not request.project_id.strip()
             or not request.project_name.strip()
-            or not request.project_creator_id.strip()
+            or not request.org_id.strip()
             or request.budget < 0
             or any(
                 not item.hardware_id.strip()
-                or not item.hardware_name.strip()
                 or item.capacity <= 0
                 for item in request.hardware_list
             )
@@ -91,16 +91,6 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 "Invalid project fields",
             )
-
-        async def operation():
-            result = await self.client.create_project(
-                create_to_json(request)
-            )
-            return pb.OperationResponse(
-                success=result["success"],
-                error_message=result.get("errorMessage", ""),
-            )
-
         return await self._execute(context, operation)
 
     async def JoinProject(self, request, context):
@@ -115,7 +105,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
 
     async def _membership(self, request, context, action):
         if not all([
-            request.project_id.strip(),
+            request.org_id.strip(),
             request.project_creator_id.strip(),
             request.user_id.strip(),
         ]):
@@ -147,21 +137,25 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
 
         return await self._execute(context, operation)
 
-    async def GetProject(self, request, context):
-        if not request.project_id.strip():
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                "Project ID is required",
-            )
-
-        async def operation():
-            result = await self.client.get_project(
-                request.project_id
-            )
-            return pb.GetProjectResponse(
-                project_info=project_to_proto(
-                    result["projectInfo"]
+        async def GetProject(self, request, context):
+            if not request.project_id.strip():
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "Project ID is required",
                 )
-            )
+            if not request.project_id.strip() or not request.org_id.strip():
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "Project ID and Organization ID are required",
+                )
 
-        return await self._execute(context, operation)
+            async def operation():
+                result = await self.client.get_project(
+                    request.project_id,
+                    request.org_id,
+                )
+                return pb.GetProjectResponse(
+                    project_info=project_to_proto(result["projectInfo"])
+                )
+
+            return await self._execute(context, operation)
