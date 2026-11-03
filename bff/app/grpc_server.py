@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 
@@ -10,7 +9,6 @@ from app.modules.projects.rest_client import ProjectsRestClient
 from app.modules.hardware.grpc_service import HardwareService
 from app.modules.hardware.rest_client import HardwareRestClient
 from proto import projects_pb2_grpc, hardware_pb2_grpc
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,24 +29,21 @@ async def serve():
     server = grpc.aio.server()
 
     projects_pb2_grpc.add_ProjectsServiceServicer_to_server(
-        ProjectsService(projects_client),
-        server,
+        ProjectsService(projects_client), server
     )
 
-    # Hardware is registered when its URL is configured.
-    if settings.hardware_api_base_url:
+    if settings.hardware_api_base_url and settings.hardware_api_key:
         hardware_client = HardwareRestClient(
             base_url=settings.hardware_api_base_url,
+            api_key=settings.hardware_api_key,
             timeout=settings.hardware_api_timeout,
         )
         hardware_pb2_grpc.add_HardwareServiceServicer_to_server(
-            HardwareService(hardware_client),
-            server,
+            HardwareService(hardware_client), server
         )
+        logger.info("HardwareService enabled")
     else:
-        logger.warning(
-            "Hardware API URL missing; HardwareService disabled"
-        )
+        logger.warning("HardwareService disabled: URL or API key is missing")
 
     address = f"{settings.grpc_host}:{settings.grpc_port}"
     if server.add_insecure_port(address) == 0:
@@ -61,7 +56,7 @@ async def serve():
     finally:
         await server.stop(grace=5)
         await projects_client.close()
-        if hardware_client:
+        if hardware_client is not None:
             await hardware_client.close()
 
 
