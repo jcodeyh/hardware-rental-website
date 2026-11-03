@@ -10,7 +10,7 @@ FROM nginx:1.27-alpine
 # the gateway still starts when a backend app does not exist yet.
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
     CLIENT_UPSTREAM=http://client:3000 \
-    SERVER_UPSTREAM=http://server:8000 \
+    SERVER_UPSTREAM=http://bff:8002 \
     DATA_UPSTREAM=http://dataservice:8000
 
 RUN rm -f /etc/nginx/conf.d/default.conf

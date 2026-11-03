@@ -1,6 +1,6 @@
 # Gateway routes (requirements 10.2). Upstreams come from environment variables:
 #   CLIENT_UPSTREAM  front end         e.g. http://127.0.0.1:3000 (same Container App in Azure)
-#   SERVER_UPSTREAM  Flask app server  (Mongo-backed login/projects/hardware API)
+#   SERVER_UPSTREAM  BFF middle layer  (login/projects/hardware API)
 #   DATA_UPSTREAM    dashboard data service
 # Prefixes are stripped before proxying (/api/data/x -> /x).
 
@@ -36,7 +36,7 @@ server {
         error_page 502 503 504 = @service_down;
     }
 
-    # The original Flask app server (login, projects, hardware), same origin as the
+    # BFF middle layer (login, projects, hardware), same origin as the
     # front end, so session cookies work without cross-site settings.
     location /api/app/ {
         rewrite ^/api/app/(.*)$ /$1 break;

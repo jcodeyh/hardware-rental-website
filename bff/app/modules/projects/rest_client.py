@@ -51,8 +51,6 @@ class ProjectsRestClient:
         )
 
     async def get_project(self, project_id: str, org_id: str) -> dict:
-        from urllib.parse import quote
-
         encoded_id = quote(project_id, safe="")
 
         return await self._request(

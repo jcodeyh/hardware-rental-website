@@ -37,7 +37,7 @@ export default function Signup() {
     }
   }
 
-  function clearForm() {
+  function clearForm(e) {
     e.preventDefault();
     setUserName('')
     setPassword('')

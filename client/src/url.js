@@ -1,20 +1,15 @@
 const URLs = {
-  // Auth
-  "login"           : "/login",
-  "signUp"          : "/api/users/register",
-  "logout"          : "/logout",
+  "login"           : "/auth/login",
+  "signUp"          : "/auth/signup",
+  "logout"          : "/auth/logout",
 
-  // Projects
-  "getProjectInfo"  : "/get_project_info",
-  "createProject"   : "/create_project",
-  "joinProject"     : "/join_project",
-  "getUserProjects" : "/get_user_projects_list",
+  "projects"        : "/projects",
+  "joinProject"     : "/projects/join",
+  "getUserProjects" : "/projects/mine",
 
-  // Hardware
-  "getAllHwNames"    : "/get_all_hw_names",
-  "checkOut"        : "/check_out",
-  "checkIn"         : "/check_in",
-  "getInventory"    : "/api/inventory",
+  "hardware"        : "/hardware",
+  "checkOut"        : "/hardware/check-out",
+  "checkIn"         : "/hardware/check-in",
 };
 
 export default URLs;
