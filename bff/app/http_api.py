@@ -1,9 +1,38 @@
 import grpc
 from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel, ConfigDict, Field
+
 from proto import projects_pb2, projects_pb2_grpc
 from proto import hardware_pb2, hardware_pb2_grpc
 
-app = FastAPI(title="Hardware Rental BFF", version="0.1.0")
+app = FastAPI(title="Hardware Rental BFF", version="0.2.0")
+
+
+class HardwareSelection(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    hardware_id: str = Field(alias="hardwareId", min_length=1)
+    capacity: int = Field(gt=0)
+
+
+class CreateProjectBody(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    creator_id: str = Field(alias="creatorId", min_length=1)
+    project_id: str = Field(alias="projectId", min_length=1)
+    project_name: str = Field(alias="projectName", min_length=1)
+    project_desc: str | None = Field(default=None, alias="projectDesc")
+    org_id: str = Field(alias="orgId", min_length=1)
+    budget: int = Field(ge=0)
+    hardware_list: list[HardwareSelection] = Field(default_factory=list, alias="hardwareList")
+
+
+class ProjectMembershipBody(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    project_id: str = Field(alias="projectId", min_length=1)
+    org_id: str = Field(alias="orgId", min_length=1)
+    user_id: str = Field(alias="userId", min_length=1)
 
 
 def _channel(request: Request):
@@ -32,6 +61,67 @@ def _grpc_error(error: grpc.aio.AioRpcError):
 @app.get("/healthz")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/projects")
+async def create_project(body: CreateProjectBody, request: Request):
+    stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
+    payload = projects_pb2.CreateProjectRequest(
+        creator_id=body.creator_id,
+        project_id=body.project_id,
+        project_name=body.project_name,
+        org_id=body.org_id,
+        budget=body.budget,
+        hardware_list=[
+            projects_pb2.HardwareItem(
+                hardware_id=item.hardware_id,
+                capacity=item.capacity,
+            )
+            for item in body.hardware_list
+        ],
+    )
+    if body.project_desc is not None:
+        payload.project_desc = body.project_desc
+
+    try:
+        result = await stub.CreateProject(payload, timeout=30)
+    except grpc.aio.AioRpcError as error:
+        _grpc_error(error)
+    return {"success": result.success, "errorMessage": result.error_message}
+
+
+@app.post("/projects/join")
+async def join_project(body: ProjectMembershipBody, request: Request):
+    stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
+    try:
+        result = await stub.JoinProject(
+            projects_pb2.ProjectMembershipRequest(
+                project_id=body.project_id,
+                org_id=body.org_id,
+                user_id=body.user_id,
+            ),
+            timeout=30,
+        )
+    except grpc.aio.AioRpcError as error:
+        _grpc_error(error)
+    return {"success": result.success, "errorMessage": result.error_message}
+
+
+@app.post("/projects/leave")
+async def leave_project(body: ProjectMembershipBody, request: Request):
+    stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
+    try:
+        result = await stub.LeaveProject(
+            projects_pb2.ProjectMembershipRequest(
+                project_id=body.project_id,
+                org_id=body.org_id,
+                user_id=body.user_id,
+            ),
+            timeout=30,
+        )
+    except grpc.aio.AioRpcError as error:
+        _grpc_error(error)
+    return {"success": result.success, "errorMessage": result.error_message}
 
 
 @app.get("/projects")
