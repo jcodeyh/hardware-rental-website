@@ -124,3 +124,16 @@ button.secondary:hover {
   background-size: 22px 22px;
   padding: 24px;
 }
+
+select#agencyCode {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #222;
+  font: inherit;
+  min-height: 42px;
+}
