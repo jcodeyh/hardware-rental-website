@@ -2,6 +2,7 @@
 import grpc
 import httpx
 
+from app.core.upstream import upstream_message
 from proto import projects_pb2 as pb
 from proto import projects_pb2_grpc as pb_grpc
 
@@ -46,7 +47,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
             )
             await context.abort(
                 code,
-                f"Projects API returned HTTP {status}",
+                upstream_message(exc.response, f"Projects API returned HTTP {status}"),
             )
 
         except httpx.TimeoutException:

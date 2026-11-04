@@ -4,6 +4,7 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
   const [projectId, setProjectId] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
+  const [budget, setBudget] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -14,8 +15,15 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
     const cleanName = projectName.trim();
     const cleanDesc = projectDescription.trim();
 
-    if (!cleanId || !cleanName || !cleanDesc) {
-      setError('All fields (Project ID, Name, and Description) are required.');
+    const parsedBudget = Number(budget);
+
+    if (!cleanId || !cleanName || !cleanDesc || budget === '') {
+      setError('All fields (Project ID, Name, Description, and Budget) are required.');
+      return;
+    }
+
+    if (!Number.isInteger(parsedBudget) || parsedBudget < 0) {
+      setError('Budget must be a whole number of 0 or more.');
       return;
     }
 
@@ -34,7 +42,7 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
       id: cleanId,
       name: cleanName,
       description: cleanDesc,
-      hardware: { hw1: 0, hw2: 0 }
+      budget: parsedBudget
     };
 
     onCreateProject(newProject);
@@ -45,6 +53,7 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
     setProjectId('');
     setProjectName('');
     setProjectDescription('');
+    setBudget('');
     setError('');
     onClose();
   };
@@ -94,6 +103,20 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
               value={projectDescription}
               onChange={(e) => setProjectDescription(e.target.value)}
               placeholder="Brief description of the project and its goals..."
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="add-project-budget">Budget</label>
+            <input
+              type="number"
+              id="add-project-budget"
+              min="0"
+              step="1"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              placeholder="e.g. 20000"
               required
             />
           </div>

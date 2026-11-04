@@ -17,25 +17,29 @@ const LandingPage = () => {
     try {
       setLoading(true);
 
-      // Fetch all system projects for registry lookup
+      setError(null);
+
       const systemData = await authService.getInventory();
-      const sysArray = Array.isArray(systemData) ? systemData : (systemData.projects || []);
-      const formattedSystem = sysArray.map(p => ({
-        id: p.projectId || p._id,
-        name: p.projectName || p.name,
-        description: p.description,
-        hardware: p.hwSets || p.hardware || {}
+      if (systemData.error) {
+        throw new Error(systemData.error);
+      }
+      const formattedSystem = (systemData.projectList || []).map(p => ({
+        id: p.projectId,
+        name: p.projectName,
+        description: '',
+        hardware: {}
       }));
       setSystemProjects(formattedSystem);
 
-      // Fetch ONLY projects the logged-in user has joined or created
       const userData = await authService.getUserProjects();
-      const userArray = Array.isArray(userData) ? userData : (userData.projects || []);
-      const formattedUser = userArray.map(p => ({
-        id: p.projectId || p._id,
-        name: p.projectName || p.name,
-        description: p.description,
-        hardware: p.hwSets || p.hardware || {}
+      if (userData.error) {
+        throw new Error(userData.error);
+      }
+      const formattedUser = (userData.projects || []).map(p => ({
+        id: p.projectId,
+        name: p.projectName,
+        description: p.projectDesc,
+        hardware: p.hardware || {}
       }));
       setProjects(formattedUser);
     } catch (err) {
@@ -61,8 +65,8 @@ const LandingPage = () => {
       const result = await authService.createProject({
         projectId: newProject.id,
         projectName: newProject.name,
-        description: newProject.description,
-        hwSets: newProject.hardware
+        projectDesc: newProject.description,
+        budget: newProject.budget
       });
 
       if (result.error) {
