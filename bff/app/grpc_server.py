@@ -8,7 +8,9 @@ from app.modules.projects.grpc_service import ProjectsService
 from app.modules.projects.rest_client import ProjectsRestClient
 from app.modules.hardware.grpc_service import HardwareService
 from app.modules.hardware.rest_client import HardwareRestClient
-from proto import projects_pb2_grpc, hardware_pb2_grpc
+from app.modules.users.grpc_service import UsersService
+from app.modules.users.store import LocalUserStore, parse_seed_users
+from proto import projects_pb2_grpc, hardware_pb2_grpc, users_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,6 +47,12 @@ async def start_grpc_runtime():
     try:
         projects_pb2_grpc.add_ProjectsServiceServicer_to_server(
             ProjectsService(projects_client), server
+        )
+
+        users_store = LocalUserStore(settings.users_db_path)
+        users_store.seed(parse_seed_users(settings.local_seed_users))
+        users_pb2_grpc.add_UsersServiceServicer_to_server(
+            UsersService(users_store), server
         )
 
         if settings.hardware_api_base_url and settings.hardware_api_key:

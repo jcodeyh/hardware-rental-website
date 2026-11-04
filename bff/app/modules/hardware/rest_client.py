@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import httpx
 
 
@@ -38,6 +40,74 @@ class HardwareRestClient:
             params["status"] = status
 
         response = await self.client.get("api/hardware", params=params)
+        response.raise_for_status()
+        return response.json()
+
+    async def create_checkout(
+        self,
+        hardware_id: str,
+        project_id: str,
+        user_id: str,
+        quantity: int,
+        reason: str,
+        request_id: str,
+    ) -> dict:
+        response = await self.client.post(
+            "api/checkouts",
+            json={
+                "hardware_id": hardware_id,
+                "project_id": project_id,
+                "user_id": user_id,
+                "quantity": quantity,
+                "reason": reason,
+                "request_id": request_id,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def list_outstanding_checkouts(
+        self,
+        project_id: str,
+        hardware_id: str = "",
+    ) -> list[dict]:
+        params = {
+            "project_id": project_id,
+            "outstanding": "true",
+            "size": 100,
+        }
+        if hardware_id:
+            params["hardware_id"] = hardware_id
+
+        items = []
+        page = 1
+        while True:
+            response = await self.client.get(
+                "api/checkouts",
+                params={**params, "page": page},
+            )
+            response.raise_for_status()
+            data = response.json()
+            items.extend(data["items"])
+            if not data["items"] or len(items) >= data["total"]:
+                return items
+            page += 1
+
+    async def return_checkout(
+        self,
+        checkout_id: str,
+        quantity: int,
+        reason: str,
+        request_id: str,
+    ) -> dict:
+        response = await self.client.post(
+            f"api/checkouts/{quote(checkout_id, safe='')}/returns",
+            json={
+                "quantity": quantity,
+                "reason": reason,
+                "request_id": request_id,
+            },
+        )
         response.raise_for_status()
         return response.json()
 

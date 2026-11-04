@@ -37,7 +37,7 @@ export default function Signup() {
     }
   }
 
-  function clearForm() {
+  function clearForm(e) {
     e.preventDefault();
     setUserName('')
     setPassword('')
@@ -84,7 +84,7 @@ export default function Signup() {
             <div className="col-lg-12 full-width">
               <div className="row">
                 <div className="col-lg-6">
-                  <button className='secondary' onClick={clearForm}>Clear</button>
+                  <button type="button" className='secondary' onClick={clearForm}>Clear</button>
                 </div>
 
                 <div className="col-lg-6">

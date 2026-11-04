@@ -59,7 +59,7 @@ export default function Login() {
           <div className="col-lg-12 full-width">
             <div className="row">
               <div className="col-lg-6">
-                <button className='secondary' onClick={clearForm}>Clear</button>
+                <button type="button" className='secondary' onClick={clearForm}>Clear</button>
               </div>
 
               <div className="col-lg-6">
