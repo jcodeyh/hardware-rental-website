@@ -87,30 +87,30 @@ const ProjectPage = () => {
           setError(projData.error);
           return;
         }
-        const hwData = await authService.getAllHwNames();
+        const hwData = await authService.getHardware();
+        if (hwData.error) {
+          setError(hwData.error);
+          return;
+        }
 
-        const hwArray = Array.isArray(hwData) ? hwData : (hwData.hardware || []);
-
-        // format projData based on MongoDB projects collection schema
+        const info = projData.projectInfo;
         const p = {
-          id: projData.projectId || projData._id || projData.id || projectId,
-          name: projData.projectName || projData.name || 'Unknown Project',
-          description: projData.description || '',
-          hardware: projData.hwSets || projData.hardware || {}
+          id: info.projectId,
+          name: info.projectName,
+          description: info.projectDesc || '',
+          hardware: info.holdings || {}
         };
         setProject(p);
         setProjectHardware(p.hardware);
 
-        // format hwData based on MongoDB hardware collection schema
-        const formattedHw = hwArray.map(h => ({
-          key: h.hwName || h.id || h._id, // use hwName as key
-          label: h.hwName || h.name || 'Unknown',
-          capacity: h.capacity || 0,
-          availability: h.availability || 0
+        const formattedHw = (hwData.items || []).map(h => ({
+          key: h.id,
+          label: h.name,
+          capacity: h.total,
+          availability: h.available
         }));
         setHwSets(formattedHw);
 
-        // Initial availability from DB
         const availMap = {};
         formattedHw.forEach(h => {
           availMap[h.key] = h.availability;
@@ -146,20 +146,15 @@ const ProjectPage = () => {
   const handleConfirm = async (qty) => {
     const { hw, mode } = modal;
     try {
-      let result;
-      if (mode === 'checkin') {
-        result = await authService.checkIn({
-          projectId: project.id,
-          hwSetName: hw.key,
-          qty
-        });
-      } else {
-        result = await authService.checkOut({
-          projectId: project.id,
-          hwSetName: hw.key,
-          qty
-        });
-      }
+      const action = {
+        projectId: project.id,
+        hardwareId: hw.key,
+        quantity: qty,
+        requestId: crypto.randomUUID()
+      };
+      const result = mode === 'checkin'
+        ? await authService.checkIn(action)
+        : await authService.checkOut(action);
 
       if (result.error) {
         alert(`Error: ${result.error}`);

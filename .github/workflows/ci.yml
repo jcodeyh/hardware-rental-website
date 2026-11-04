@@ -27,6 +27,20 @@ jobs:
       - run: flake8 . --select=F
       - run: pytest
 
+  bff:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt flake8
+      - run: flake8 app tests scripts --select=F
+      - run: python -m pytest
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -43,14 +57,14 @@ jobs:
   # MongoDB and the old Flask server/ are not part of the vertical slice, so
   # they are neither tested nor built here.
   images:
-    needs: [dataservice, frontend]
+    needs: [dataservice, bff, frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write   # lets GITHUB_TOKEN push to GHCR
     strategy:
       matrix:
-        name: [client, dataservice, gateway]
+        name: [bff, client, dataservice, gateway]
     env:
       # Only main pushes images; other branches and PRs just prove they build.
       PUSH: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
@@ -87,8 +101,8 @@ jobs:
       contents: read
     env:
       RG: Data_Management
-      # One Container App, three containers. Only the gateway container has
-      # ingress; client and dataservice are reached over localhost.
+      # One Container App, four containers. Only the gateway container has
+      # ingress; client, dataservice and bff are reached over localhost.
       APP: hardware-rental
     steps:
       - name: Azure login (OIDC)
@@ -98,10 +112,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy the three containers
+      - name: Deploy the four containers
         run: |
           # Container names in the app match the image names.
-          for name in client dataservice gateway; do
+          for name in bff client dataservice gateway; do
             az containerapp update -n "$APP" -g "$RG" --container-name "$name" --image "$IMAGE_PREFIX/$name:${{ github.sha }}" -o none
           done
 
@@ -111,7 +125,7 @@ jobs:
           echo "Gateway: $GATEWAY"
           # Apps scale to zero and the serverless database pauses, so the first
           # hit can take a minute or more; retry instead of failing on a cold start.
-          for path in /healthz /dashboard /api/data/governments; do
+          for path in /healthz /dashboard /api/data/governments /api/app/healthz; do
             curl -fsS --retry 6 --retry-delay 15 --retry-all-errors --max-time 150 -o /dev/null "$GATEWAY$path"
             echo "OK $path"
           done

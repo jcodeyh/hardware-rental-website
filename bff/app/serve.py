@@ -14,6 +14,8 @@ async def main():
     # Both services run in the same container, and the HTTP bridge is the only public listener.
     if settings.grpc_host not in ("127.0.0.1", "localhost"):
         raise ValueError("For the HTTP bridge, set GRPC_HOST=127.0.0.1")
+    if not settings.session_secret:
+        raise ValueError("SESSION_SECRET is required")
     runtime = await start_grpc_runtime()
     channel = grpc.aio.insecure_channel(f"127.0.0.1:{settings.grpc_port}")
     app.state.grpc_channel = channel

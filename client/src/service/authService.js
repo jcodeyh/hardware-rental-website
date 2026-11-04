@@ -1,154 +1,76 @@
-
 import URLs from "../url";
 
 class AuthService {
   constructor() {
-    // Vite inlines VITE_* at build time; falls back to the local Flask
-    // server so `npm run dev` keeps working with no extra setup.
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hardware-rental.wonderfulsky-6d5c5842.westus.azurecontainerapps.io";
-    this.headers = { "Content-Type": "application/json" };
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/app";
   }
 
-  async login(requestObject) {
-    let url = this.baseUrl + URLs.login;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      // The API is a different origin, and fetch defaults to
-      // credentials: "same-origin" -- without this the browser silently
-      // discards the session cookie the server sets here.
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
-    return data
-  }
-
-  async signup(requestObject) {
-    let url = this.baseUrl + URLs.signUp;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
+  async send(path, method = "GET", body) {
+    const options = { method, credentials: "include" };
+    if (body !== undefined) {
+      options.headers = { "Content-Type": "application/json" };
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch(this.baseUrl + path, options);
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+    if (!response.ok && !data.error) {
+      data.error = data.message || `Request failed with status ${response.status}`;
+    }
     return data;
   }
 
-  // ── Auth ──────────────────────────────────────────────────────────────
+  login(requestObject) {
+    return this.send(URLs.login, "POST", requestObject);
+  }
+
+  signup(requestObject) {
+    return this.send(URLs.signUp, "POST", requestObject);
+  }
+
   async logout() {
-    let url = this.baseUrl + URLs.logout;
-    let response = await fetch(url, {
+    const response = await fetch(this.baseUrl + URLs.logout, {
       method: "POST",
-      headers: this.headers,
       credentials: "include",
     });
-    return response.status; // 204 on success
+    return response.status;
   }
 
-  // ── Projects ──────────────────────────────────────────────────────────
-
-  /** GET /get_project_info?projectId=<id> */
-  async getProjectInfo(projectId) {
-    let url = this.baseUrl + URLs.getProjectInfo + `?projectId=${encodeURIComponent(projectId)}`;
-    let response = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-      credentials: "include",
-    });
-    const data = await response.json();
-    return data;
+  getProjectInfo(projectId) {
+    return this.send(`${URLs.projects}/${encodeURIComponent(projectId)}`);
   }
 
-  /** POST /create_project  — body: { projectId, projectName, description, hwSets } */
-  async createProject(requestObject) {
-    let url = this.baseUrl + URLs.createProject;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
-    return data;
+  createProject(requestObject) {
+    return this.send(URLs.projects, "POST", requestObject);
   }
 
-  /** POST /join_project  — body: { projectId } */
-  async joinProject(requestObject) {
-    let url = this.baseUrl + URLs.joinProject;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
-    return data;
+  joinProject(requestObject) {
+    return this.send(URLs.joinProject, "POST", requestObject);
   }
 
-  /** GET /get_user_projects_list */
-  async getUserProjects() {
-    let url = this.baseUrl + URLs.getUserProjects;
-    let response = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-      credentials: "include",
-    });
-    const data = await response.json();
-    return data;
+  getUserProjects() {
+    return this.send(URLs.getUserProjects);
   }
 
-  // ── Hardware ──────────────────────────────────────────────────────────
-
-  /** GET /get_all_hw_names */
-  async getAllHwNames() {
-    let url = this.baseUrl + URLs.getAllHwNames;
-    let response = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-    });
-    const data = await response.json();
-    return data;
+  getInventory() {
+    return this.send(URLs.projects);
   }
 
-  /** GET /api/inventory */
-  async getInventory() {
-    let url = this.baseUrl + URLs.getInventory;
-    let response = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-    });
-    const data = await response.json();
-    return data;
+  getHardware() {
+    return this.send(`${URLs.hardware}?size=100`);
   }
 
-  /** POST /check_out  — body: { projectId, hwSetName, qty } */
-  async checkOut(requestObject) {
-    let url = this.baseUrl + URLs.checkOut;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
-    return data;
+  checkOut(requestObject) {
+    return this.send(URLs.checkOut, "POST", requestObject);
   }
 
-  /** POST /check_in  — body: { projectId, hwSetName, qty } */
-  async checkIn(requestObject) {
-    let url = this.baseUrl + URLs.checkIn;
-    let response = await fetch(url, {
-      method: "POST",
-      headers: this.headers,
-      credentials: "include",
-      body: JSON.stringify(requestObject),
-    });
-    const data = await response.json();
-    return data;
+  checkIn(requestObject) {
+    return this.send(URLs.checkIn, "POST", requestObject);
   }
 }
 
 export default new AuthService();
-
