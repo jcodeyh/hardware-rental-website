@@ -118,7 +118,7 @@ async def test_grpc_to_rest_full_flow():
             assert detail.project_info.org_id == "ORG001"
             assert detail.project_info.budget == 50000
             assert detail.project_info.hardware_list[0].hardware_id == "HW001"
-            assert detail.project_info.hardware_list[0].capacity == 20
+            assert detail.project_info.hardware_list[0].allocation == 20
             assert "user2" in detail.project_info.joined_users
 
             with pytest.raises(grpc.aio.AioRpcError) as error:

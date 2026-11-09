@@ -3,17 +3,20 @@ syntax = "proto3";
 
 package projects.v1;
 
+import "google/protobuf/struct.proto";
+
 service ProjectsService {
   rpc CreateProject(CreateProjectRequest) returns (OperationResponse);
   rpc JoinProject(ProjectMembershipRequest) returns (OperationResponse);
   rpc LeaveProject(ProjectMembershipRequest) returns (OperationResponse);
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse);
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc GetBudgetContext(BudgetContextRequest) returns (google.protobuf.Struct);
 }
 
 message HardwareItem {
   string hardware_id = 1;
-  int32 capacity = 2;
+  int32 allocation = 2;
 }
 
 message Project {
@@ -70,4 +73,15 @@ message GetProjectResponse {
 message OperationResponse {
   bool success = 1;
   string error_message = 2;
+}
+
+message BudgetItem {
+  string description = 1;
+  int32 quantity = 2;
+}
+
+message BudgetContextRequest {
+  string org_id = 1;
+  double budget = 2;
+  repeated BudgetItem items = 3;
 }

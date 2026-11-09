@@ -12,7 +12,7 @@ async def main():
             result = await stub.ListHardware(
                 pb.ListHardwareRequest(page=1, size=20), timeout=30,
             )
-            print("SUCCESS: gRPC -> BFF Docker -> Hardware REST (Azure)")
+            print("SUCCESS: gRPC -> BFF -> Hardware team gRPC")
             print(f"Total: {result.total}; page: {result.page}; size: {result.size}")
             for item in result.items:
                 print(f"{item.id} | {item.name} | {item.category} | available={item.available}")

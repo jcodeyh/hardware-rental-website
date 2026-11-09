@@ -1,36 +1,7 @@
-
 import grpc
-import httpx
 
-from app.core.upstream import upstream_message
 from proto import hardware_pb2 as pb
 from proto import hardware_pb2_grpc as pb_grpc
-
-
-HTTP_TO_GRPC = {
-    400: grpc.StatusCode.INVALID_ARGUMENT,
-    401: grpc.StatusCode.UNAUTHENTICATED,
-    403: grpc.StatusCode.PERMISSION_DENIED,
-    404: grpc.StatusCode.NOT_FOUND,
-    409: grpc.StatusCode.FAILED_PRECONDITION,
-    422: grpc.StatusCode.INVALID_ARGUMENT,
-    429: grpc.StatusCode.RESOURCE_EXHAUSTED,
-    502: grpc.StatusCode.UNAVAILABLE,
-    503: grpc.StatusCode.UNAVAILABLE,
-    504: grpc.StatusCode.DEADLINE_EXCEEDED,
-}
-
-
-def _available(item):
-    if "available" in item:
-        return item["available"]
-    return max(item["total"] - item["out"] - item["reserved"], 0)
-
-
-def _outstanding(checkout):
-    if "outstanding" in checkout:
-        return checkout["outstanding"]
-    return checkout["quantity"] - checkout.get("returned", 0)
 
 
 class HardwareService(pb_grpc.HardwareServiceServicer):
@@ -40,69 +11,46 @@ class HardwareService(pb_grpc.HardwareServiceServicer):
     async def _execute(self, context, operation):
         try:
             return await operation()
-
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code
+        except grpc.aio.AioRpcError as error:
+            if error.code() == grpc.StatusCode.UNAUTHENTICATED:
+                await context.abort(
+                    grpc.StatusCode.INTERNAL,
+                    "The Hardware service rejected our team credentials",
+                )
             await context.abort(
-                HTTP_TO_GRPC.get(status, grpc.StatusCode.UNKNOWN),
-                upstream_message(exc.response, f"Hardware API returned HTTP {status}"),
-            )
-
-        except httpx.TimeoutException:
-            await context.abort(
-                grpc.StatusCode.DEADLINE_EXCEEDED,
-                "Hardware API timed out",
-            )
-
-        except httpx.RequestError:
-            await context.abort(
-                grpc.StatusCode.UNAVAILABLE,
-                "Hardware API unavailable",
-            )
-
-        except (KeyError, TypeError, ValueError):
-            await context.abort(
-                grpc.StatusCode.INTERNAL,
-                "Invalid Hardware API response",
+                error.code(),
+                error.details() or "Hardware service request failed",
             )
 
     async def ListHardware(self, request, context):
         page = request.page or 1
         size = request.size or 20
-
         if page < 1 or not 1 <= size <= 100:
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                "Invalid pagination parameters",
-            )
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid pagination parameters")
 
         async def operation():
             data = await self.client.list_hardware(
-                page=page,
-                size=size,
-                category=request.category,
-                status=request.status,
+                page=page, size=size, category=request.category, status=request.status
             )
-
             return pb.ListHardwareResponse(
                 items=[
                     pb.HardwareItem(
-                        id=item["_id"],
-                        name=item["name"],
-                        category=item["category"],
-                        asset_tag=item["asset_tag"],
-                        status=item["status"],
-                        total=item["total"],
-                        out=item["out"],
-                        reserved=item["reserved"],
-                        version=item["version"],
-                        available=_available(item),
+                        id=item.id,
+                        name=item.name,
+                        category=item.category,
+                        asset_tag=item.asset_tag,
+                        status=item.status,
+                        total=item.total,
+                        out=item.out,
+                        reserved=item.reserved,
+                        version=item.version,
+                        available=item.available,
                     )
-                    for item in data["items"]
+                    for item in data.items
                 ],
-                total=data["total"],
-                page=data["page"],
-                size=data["size"],
+                total=data.total,
+                page=data.page,
+                size=data.size,
             )
 
         return await self._execute(context, operation)
@@ -127,11 +75,12 @@ class HardwareService(pb_grpc.HardwareServiceServicer):
         await self._validate_action(request, context)
 
         async def operation():
-            checkouts = await self.client.list_outstanding_checkouts(
-                request.project_id,
-                request.hardware_id,
+            checkouts = await self.client.list_checkouts(
+                project_id=request.project_id,
+                hardware_id=request.hardware_id,
+                outstanding=True,
             )
-            held = sum(_outstanding(checkout) for checkout in checkouts)
+            held = sum(checkout.outstanding for checkout in checkouts)
             if request.quantity > held:
                 await context.abort(
                     grpc.StatusCode.FAILED_PRECONDITION,
@@ -142,38 +91,92 @@ class HardwareService(pb_grpc.HardwareServiceServicer):
             for checkout in checkouts:
                 if remaining == 0:
                     break
-                quantity = min(remaining, _outstanding(checkout))
+                quantity = min(remaining, checkout.outstanding)
                 if quantity <= 0:
                     continue
                 await self.client.return_checkout(
-                    checkout_id=checkout["_id"],
+                    checkout_id=checkout.id,
                     quantity=quantity,
                     reason=f"Checked in through the website by {request.user_id}",
-                    request_id=f"{request.request_id}.{checkout['_id']}",
+                    request_id=f"{request.request_id}.{checkout.id}",
                 )
                 remaining -= quantity
             return pb.HardwareActionResponse(success=True)
 
         return await self._execute(context, operation)
 
-    async def GetHoldings(self, request, context):
+    async def GetProjectHardware(self, request, context):
         if not request.project_id.strip():
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Project ID is required")
+
+        async def operation():
+            allocations = await self.client.list_allocations(request.project_id)
+            hardware = await self.client.get_many([a.hardware_id for a in allocations])
+            return pb.GetProjectHardwareResponse(
+                items=[
+                    pb.ProjectHardware(
+                        hardware_id=a.hardware_id,
+                        name=_name(hardware, a.hardware_id),
+                        category=_category(hardware, a.hardware_id),
+                        reserved=a.quantity,
+                        out=a.out,
+                    )
+                    for a in allocations
+                ]
+            )
+
+        return await self._execute(context, operation)
+
+    async def ReserveHardware(self, request, context):
+        if (
+            not request.hardware_id.strip()
+            or not request.project_id.strip()
+            or not request.request_id.strip()
+            or request.quantity < 0
+        ):
             await context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
-                "Project ID is required",
+                "Hardware, project, quantity and request ID are required",
             )
 
         async def operation():
-            checkouts = await self.client.list_outstanding_checkouts(request.project_id)
+            await self.client.allocate(
+                hardware_id=request.hardware_id,
+                project_id=request.project_id,
+                quantity=request.quantity,
+                reason=f"Reserved for a new project by {request.user_id or 'the website'}",
+                request_id=request.request_id,
+            )
+            return pb.HardwareActionResponse(success=True)
+
+        return await self._execute(context, operation)
+
+    async def GetUserHardware(self, request, context):
+        if not request.user_id.strip():
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "User ID is required")
+
+        async def operation():
+            checkouts = await self.client.list_checkouts(
+                user_id=request.user_id, outstanding=False
+            )
             totals = {}
             for checkout in checkouts:
-                hardware_id = checkout["hardware_id"]
-                totals[hardware_id] = totals.get(hardware_id, 0) + _outstanding(checkout)
-            return pb.GetHoldingsResponse(
-                holdings=[
-                    pb.Holding(hardware_id=hardware_id, quantity=quantity)
-                    for hardware_id, quantity in totals.items()
-                    if quantity > 0
+                quantity, outstanding = totals.get(checkout.hardware_id, (0, 0))
+                totals[checkout.hardware_id] = (
+                    quantity + checkout.quantity,
+                    outstanding + checkout.outstanding,
+                )
+            hardware = await self.client.get_many(list(totals))
+            return pb.GetUserHardwareResponse(
+                items=[
+                    pb.UserHardware(
+                        hardware_id=hardware_id,
+                        name=_name(hardware, hardware_id),
+                        category=_category(hardware, hardware_id),
+                        quantity=quantity,
+                        outstanding=outstanding,
+                    )
+                    for hardware_id, (quantity, outstanding) in totals.items()
                 ]
             )
 
@@ -191,3 +194,13 @@ class HardwareService(pb_grpc.HardwareServiceServicer):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 "Hardware, project, user, quantity and request ID are required",
             )
+
+
+def _name(hardware, hardware_id):
+    item = hardware.get(hardware_id)
+    return item.name if item is not None and item.name else hardware_id
+
+
+def _category(hardware, hardware_id):
+    item = hardware.get(hardware_id)
+    return item.category if item is not None else ""

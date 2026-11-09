@@ -16,7 +16,13 @@ async def main():
         print(f"POST /auth/login: HTTP {login.status_code}")
         if login.status_code != 200:
             raise SystemExit("Failed on /auth/login")
-        for route in ("/healthz", "/projects", "/projects/mine", "/hardware"):
+        if login.json().get("nextStep"):
+            code = os.getenv("BFF_TOTP_CODE") or input("Six-digit authenticator code: ")
+            verify = await client.post(base + "/auth/2fa/verify", json={"code": code})
+            print(f"POST /auth/2fa/verify: HTTP {verify.status_code}")
+            if verify.status_code != 200:
+                raise SystemExit("Failed on /auth/2fa/verify")
+        for route in ("/healthz", "/auth/me", "/projects", "/projects/mine", "/hardware", "/dashboard/my-hardware"):
             response = await client.get(base + route)
             print(f"GET {route}: HTTP {response.status_code}")
             try:
@@ -25,7 +31,7 @@ async def main():
                 print(response.text[:500])
             if response.status_code != 200:
                 raise SystemExit(f"Failed on {route}")
-    print("SUCCESS: HTTP -> gRPC -> REST -> Azure")
+    print("SUCCESS: HTTP -> BFF gRPC -> User, Project and Hardware services")
 
 
 if __name__ == "__main__":

@@ -35,24 +35,34 @@ class HardwareServiceStub:
             channel: A grpc.Channel.
         """
         self.ListHardware = channel.unary_unary(
-                '/hardware.v1.HardwareService/ListHardware',
+                '/bff.hardware.v1.HardwareService/ListHardware',
                 request_serializer=proto_dot_hardware__pb2.ListHardwareRequest.SerializeToString,
                 response_deserializer=proto_dot_hardware__pb2.ListHardwareResponse.FromString,
                 _registered_method=True)
         self.CheckOut = channel.unary_unary(
-                '/hardware.v1.HardwareService/CheckOut',
+                '/bff.hardware.v1.HardwareService/CheckOut',
                 request_serializer=proto_dot_hardware__pb2.CheckOutRequest.SerializeToString,
                 response_deserializer=proto_dot_hardware__pb2.HardwareActionResponse.FromString,
                 _registered_method=True)
         self.CheckIn = channel.unary_unary(
-                '/hardware.v1.HardwareService/CheckIn',
+                '/bff.hardware.v1.HardwareService/CheckIn',
                 request_serializer=proto_dot_hardware__pb2.CheckInRequest.SerializeToString,
                 response_deserializer=proto_dot_hardware__pb2.HardwareActionResponse.FromString,
                 _registered_method=True)
-        self.GetHoldings = channel.unary_unary(
-                '/hardware.v1.HardwareService/GetHoldings',
-                request_serializer=proto_dot_hardware__pb2.GetHoldingsRequest.SerializeToString,
-                response_deserializer=proto_dot_hardware__pb2.GetHoldingsResponse.FromString,
+        self.GetProjectHardware = channel.unary_unary(
+                '/bff.hardware.v1.HardwareService/GetProjectHardware',
+                request_serializer=proto_dot_hardware__pb2.GetProjectHardwareRequest.SerializeToString,
+                response_deserializer=proto_dot_hardware__pb2.GetProjectHardwareResponse.FromString,
+                _registered_method=True)
+        self.ReserveHardware = channel.unary_unary(
+                '/bff.hardware.v1.HardwareService/ReserveHardware',
+                request_serializer=proto_dot_hardware__pb2.ReserveHardwareRequest.SerializeToString,
+                response_deserializer=proto_dot_hardware__pb2.HardwareActionResponse.FromString,
+                _registered_method=True)
+        self.GetUserHardware = channel.unary_unary(
+                '/bff.hardware.v1.HardwareService/GetUserHardware',
+                request_serializer=proto_dot_hardware__pb2.GetUserHardwareRequest.SerializeToString,
+                response_deserializer=proto_dot_hardware__pb2.GetUserHardwareResponse.FromString,
                 _registered_method=True)
 
 
@@ -77,7 +87,19 @@ class HardwareServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetHoldings(self, request, context):
+    def GetProjectHardware(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReserveHardware(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetUserHardware(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -101,16 +123,26 @@ def add_HardwareServiceServicer_to_server(servicer, server):
                     request_deserializer=proto_dot_hardware__pb2.CheckInRequest.FromString,
                     response_serializer=proto_dot_hardware__pb2.HardwareActionResponse.SerializeToString,
             ),
-            'GetHoldings': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetHoldings,
-                    request_deserializer=proto_dot_hardware__pb2.GetHoldingsRequest.FromString,
-                    response_serializer=proto_dot_hardware__pb2.GetHoldingsResponse.SerializeToString,
+            'GetProjectHardware': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetProjectHardware,
+                    request_deserializer=proto_dot_hardware__pb2.GetProjectHardwareRequest.FromString,
+                    response_serializer=proto_dot_hardware__pb2.GetProjectHardwareResponse.SerializeToString,
+            ),
+            'ReserveHardware': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReserveHardware,
+                    request_deserializer=proto_dot_hardware__pb2.ReserveHardwareRequest.FromString,
+                    response_serializer=proto_dot_hardware__pb2.HardwareActionResponse.SerializeToString,
+            ),
+            'GetUserHardware': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetUserHardware,
+                    request_deserializer=proto_dot_hardware__pb2.GetUserHardwareRequest.FromString,
+                    response_serializer=proto_dot_hardware__pb2.GetUserHardwareResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'hardware.v1.HardwareService', rpc_method_handlers)
+            'bff.hardware.v1.HardwareService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('hardware.v1.HardwareService', rpc_method_handlers)
+    server.add_registered_method_handlers('bff.hardware.v1.HardwareService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -131,7 +163,7 @@ class HardwareService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/hardware.v1.HardwareService/ListHardware',
+            '/bff.hardware.v1.HardwareService/ListHardware',
             proto_dot_hardware__pb2.ListHardwareRequest.SerializeToString,
             proto_dot_hardware__pb2.ListHardwareResponse.FromString,
             options,
@@ -158,7 +190,7 @@ class HardwareService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/hardware.v1.HardwareService/CheckOut',
+            '/bff.hardware.v1.HardwareService/CheckOut',
             proto_dot_hardware__pb2.CheckOutRequest.SerializeToString,
             proto_dot_hardware__pb2.HardwareActionResponse.FromString,
             options,
@@ -185,7 +217,7 @@ class HardwareService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/hardware.v1.HardwareService/CheckIn',
+            '/bff.hardware.v1.HardwareService/CheckIn',
             proto_dot_hardware__pb2.CheckInRequest.SerializeToString,
             proto_dot_hardware__pb2.HardwareActionResponse.FromString,
             options,
@@ -199,7 +231,7 @@ class HardwareService:
             _registered_method=True)
 
     @staticmethod
-    def GetHoldings(request,
+    def GetProjectHardware(request,
             target,
             options=(),
             channel_credentials=None,
@@ -212,9 +244,63 @@ class HardwareService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/hardware.v1.HardwareService/GetHoldings',
-            proto_dot_hardware__pb2.GetHoldingsRequest.SerializeToString,
-            proto_dot_hardware__pb2.GetHoldingsResponse.FromString,
+            '/bff.hardware.v1.HardwareService/GetProjectHardware',
+            proto_dot_hardware__pb2.GetProjectHardwareRequest.SerializeToString,
+            proto_dot_hardware__pb2.GetProjectHardwareResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReserveHardware(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/bff.hardware.v1.HardwareService/ReserveHardware',
+            proto_dot_hardware__pb2.ReserveHardwareRequest.SerializeToString,
+            proto_dot_hardware__pb2.HardwareActionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetUserHardware(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/bff.hardware.v1.HardwareService/GetUserHardware',
+            proto_dot_hardware__pb2.GetUserHardwareRequest.SerializeToString,
+            proto_dot_hardware__pb2.GetUserHardwareResponse.FromString,
             options,
             channel_credentials,
             insecure,
