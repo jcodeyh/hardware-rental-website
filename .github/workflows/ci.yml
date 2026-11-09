@@ -39,6 +39,11 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt flake8
       - run: flake8 app tests scripts --select=F
+      - name: Generated gRPC code matches the .proto files
+        run: |
+          python -m grpc_tools.protoc -I . --python_out=. --grpc_python_out=. \
+            proto/projects.proto proto/hardware.proto proto/users.proto proto/upstream/hardware.proto
+          git diff --exit-code -- proto
       - run: python -m pytest
 
   frontend:
@@ -52,12 +57,27 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npm test
       - run: npm run build
+
+  gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y nginx
+      - run: pip install "pytest>=8,<10"
+      - run: python -m pytest tests -q
 
   # MongoDB and the old Flask server/ are not part of the vertical slice, so
   # they are neither tested nor built here.
   images:
-    needs: [dataservice, bff, frontend]
+    needs: [dataservice, bff, frontend, gateway]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,7 +145,10 @@ jobs:
           echo "Gateway: $GATEWAY"
           # Apps scale to zero and the serverless database pauses, so the first
           # hit can take a minute or more; retry instead of failing on a cold start.
-          for path in /healthz /dashboard /api/data/governments /api/app/healthz; do
+          for path in /healthz /dashboard /api/app/healthz; do
             curl -fsS --retry 6 --retry-delay 15 --retry-all-errors --max-time 150 -o /dev/null "$GATEWAY$path"
             echo "OK $path"
           done
+          status=$(curl -sS --max-time 150 -o /dev/null -w '%{http_code}' "$GATEWAY/api/data/governments")
+          test "$status" = 401
+          echo "OK /api/data/governments needs a login"
