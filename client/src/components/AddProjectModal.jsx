@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import authService from '../service/authService';
 
 const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProject }) => {
   const [projectId, setProjectId] = useState('');
@@ -6,6 +7,21 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
   const [projectDescription, setProjectDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [error, setError] = useState('');
+  const [hardware, setHardware] = useState([]);
+  const [allocations, setAllocations] = useState({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let ignore = false;
+    authService.getHardware()
+      .then((data) => {
+        if (!ignore && !data.error) setHardware(data.items || []);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -37,12 +53,25 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
       return;
     }
 
+    const hardwareList = [];
+    for (const hw of hardware) {
+      const raw = allocations[hw.id];
+      if (raw === undefined || raw === '') continue;
+      const allocation = Number(raw);
+      if (!Number.isInteger(allocation) || allocation < 0) {
+        setError(`Allocation for ${hw.name} must be a whole number of 0 or more.`);
+        return;
+      }
+      if (allocation > 0) hardwareList.push({ hardwareId: hw.id, allocation });
+    }
+
     setError('');
     const newProject = {
       id: cleanId,
       name: cleanName,
       description: cleanDesc,
-      budget: parsedBudget
+      budget: parsedBudget,
+      hardwareList
     };
 
     onCreateProject(newProject);
@@ -54,6 +83,7 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
     setProjectName('');
     setProjectDescription('');
     setBudget('');
+    setAllocations({});
     setError('');
     onClose();
   };
@@ -120,6 +150,28 @@ const AddProjectModal = ({ isOpen, onClose, allSystemProjects = [], onCreateProj
               required
             />
           </div>
+
+          {hardware.length > 0 && (
+            <fieldset className="form-group" id="add-project-hardware">
+              <legend style={{ fontSize: '0.9rem', fontWeight: 600 }}>Hardware allocation (optional)</legend>
+              {hardware.map((hw) => (
+                <div key={hw.id} className="form-group">
+                  <label htmlFor={`add-project-alloc-${hw.id}`}>
+                    {hw.name}{hw.available !== undefined ? ` (${hw.available} available)` : ''}
+                  </label>
+                  <input
+                    type="number"
+                    id={`add-project-alloc-${hw.id}`}
+                    min="0"
+                    step="1"
+                    value={allocations[hw.id] ?? ''}
+                    onChange={(e) => setAllocations((prev) => ({ ...prev, [hw.id]: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </fieldset>
+          )}
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={handleClose} id="modal-add-btn-cancel">

@@ -1,5 +1,22 @@
 import URLs from "../url";
 
+function detailText(detail) {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map((d) => d?.msg || String(d)).join("; ");
+  return detail.msg || "";
+}
+
+export function errorMessage(data, status) {
+  return (
+    (typeof data.error === "string" && data.error) ||
+    data.message ||
+    data.errorMessage ||
+    detailText(data.detail) ||
+    `Request failed with status ${status}`
+  );
+}
+
 class AuthService {
   constructor() {
     this.baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/app";
@@ -18,8 +35,12 @@ class AuthService {
     } catch {
       data = {};
     }
-    if (!response.ok && !data.error) {
-      data.error = data.message || `Request failed with status ${response.status}`;
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      data = { data };
+    }
+    data.status = response.status;
+    if (!response.ok) {
+      data.error = errorMessage(data, response.status);
     }
     return data;
   }
@@ -30,6 +51,18 @@ class AuthService {
 
   signup(requestObject) {
     return this.send(URLs.signUp, "POST", requestObject);
+  }
+
+  me() {
+    return this.send(URLs.me);
+  }
+
+  setupTwoFactor() {
+    return this.send(URLs.twoFactorSetup, "POST");
+  }
+
+  verifyTwoFactor(code) {
+    return this.send(URLs.twoFactorVerify, "POST", { code });
   }
 
   async logout() {
@@ -70,6 +103,14 @@ class AuthService {
 
   checkIn(requestObject) {
     return this.send(URLs.checkIn, "POST", requestObject);
+  }
+
+  getMyHardware() {
+    return this.send(URLs.myHardware);
+  }
+
+  getBudgetContext(requestObject) {
+    return this.send(URLs.budgetContext, "POST", requestObject);
   }
 }
 

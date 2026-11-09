@@ -11,9 +11,8 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* Vertical slice: the public gateway address opens the dashboard (6.5). */}
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/" element={<Navigate to="/landingPage" replace />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/signUp" element={<Signup />} />
         <Route path="/landingPage" element={<ProtectedRoute><LandingPage /></ProtectedRoute>} />
