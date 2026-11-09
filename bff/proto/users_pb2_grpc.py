@@ -42,6 +42,16 @@ class UsersServiceStub:
         self.Login = channel.unary_unary(
                 '/users.v1.UsersService/Login',
                 request_serializer=proto_dot_users__pb2.LoginRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.LoginResponse.FromString,
+                _registered_method=True)
+        self.SetupTwoFactor = channel.unary_unary(
+                '/users.v1.UsersService/SetupTwoFactor',
+                request_serializer=proto_dot_users__pb2.TwoFactorSetupRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.TwoFactorSetupResponse.FromString,
+                _registered_method=True)
+        self.CompleteTwoFactor = channel.unary_unary(
+                '/users.v1.UsersService/CompleteTwoFactor',
+                request_serializer=proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
                 response_deserializer=proto_dot_users__pb2.UserResponse.FromString,
                 _registered_method=True)
 
@@ -61,6 +71,18 @@ class UsersServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SetupTwoFactor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CompleteTwoFactor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_UsersServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -72,6 +94,16 @@ def add_UsersServiceServicer_to_server(servicer, server):
             'Login': grpc.unary_unary_rpc_method_handler(
                     servicer.Login,
                     request_deserializer=proto_dot_users__pb2.LoginRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.LoginResponse.SerializeToString,
+            ),
+            'SetupTwoFactor': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetupTwoFactor,
+                    request_deserializer=proto_dot_users__pb2.TwoFactorSetupRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.TwoFactorSetupResponse.SerializeToString,
+            ),
+            'CompleteTwoFactor': grpc.unary_unary_rpc_method_handler(
+                    servicer.CompleteTwoFactor,
+                    request_deserializer=proto_dot_users__pb2.TwoFactorCodeRequest.FromString,
                     response_serializer=proto_dot_users__pb2.UserResponse.SerializeToString,
             ),
     }
@@ -128,6 +160,60 @@ class UsersService:
             target,
             '/users.v1.UsersService/Login',
             proto_dot_users__pb2.LoginRequest.SerializeToString,
+            proto_dot_users__pb2.LoginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetupTwoFactor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/SetupTwoFactor',
+            proto_dot_users__pb2.TwoFactorSetupRequest.SerializeToString,
+            proto_dot_users__pb2.TwoFactorSetupResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CompleteTwoFactor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/CompleteTwoFactor',
+            proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
             proto_dot_users__pb2.UserResponse.FromString,
             options,
             channel_credentials,

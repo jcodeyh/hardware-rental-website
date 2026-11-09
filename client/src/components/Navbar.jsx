@@ -5,9 +5,8 @@ import authService from '../service/authService';
 
 const Navbar = ({ onJoinClick, onAddClick }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const rawUser = localStorage.getItem('username');
-  const username = (rawUser && rawUser !== 'undefined') ? rawUser : 'User';
+  const { user, logout } = useAuth();
+  const username = user?.username || 'User';
 
   const handleLogout = async () => {
     try {
@@ -15,7 +14,6 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('username');
       logout();
       navigate('/login');
     }
@@ -29,6 +27,9 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
           Welcome, <strong>{username}</strong>
         </span>
         <div className="navbar-actions">
+          <button className="btn btn-outline" id="navbar-btn-dashboard" onClick={() => navigate('/dashboard')}>
+            Dashboard
+          </button>
           <button className="btn btn-secondary" id="navbar-btn-join" onClick={onJoinClick}>
             Join Project
           </button>

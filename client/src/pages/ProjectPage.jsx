@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import authService from '../service/authService';
+import { useAuth } from '../context/AuthContext.jsx';
 
-// Simple popup modal for quantity input
 const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) => {
   const [qty, setQty] = useState('');
   const [error, setError] = useState('');
@@ -16,8 +17,10 @@ const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) =>
       setError('Please enter a valid number.');
       return;
     }
-    if (mode === 'checkout' && parsed > maxQty) {
-      setError(`Only ${maxQty} units available.`);
+    if (parsed > maxQty) {
+      setError(mode === 'checkout'
+        ? `Only ${maxQty} units remaining.`
+        : `Only ${maxQty} units are checked out.`);
       return;
     }
     onConfirm(parsed);
@@ -38,7 +41,7 @@ const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) =>
           <h2 className="modal-title">
             {mode === 'checkin' ? 'Check In' : 'Check Out'} — {hwLabel}
           </h2>
-          <button className="modal-close-btn" onClick={handleClose}>×</button>
+          <button className="modal-close-btn" onClick={handleClose} aria-label="Close">×</button>
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
@@ -51,7 +54,7 @@ const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) =>
               min="1"
               value={qty}
               onChange={(e) => { setQty(e.target.value); setError(''); }}
-              placeholder={mode === 'checkout' ? `Max: ${maxQty}` : 'Enter amount'}
+              placeholder={`Max: ${maxQty}`}
               autoFocus
             />
           </div>
@@ -65,67 +68,62 @@ const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) =>
   );
 };
 
+const toCount = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
 const ProjectPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const [project, setProject] = useState(null);
-  const [hwSets, setHwSets] = useState([]);
-  const [projectHardware, setProjectHardware] = useState({});
-  const [availability, setAvailability] = useState({});
+  const [rows, setRows] = useState([]);
   const [modal, setModal] = useState({ open: false, hw: null, mode: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let ignore = false;
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Using the authService which properly handles credentials
         const projData = await authService.getProjectInfo(projectId);
+        if (ignore) return;
         if (projData.error) {
           setError(projData.error);
           return;
         }
-        const hwData = await authService.getHardware();
-        if (hwData.error) {
-          setError(hwData.error);
+        const info = projData.projectInfo;
+        if (!info) {
+          setProject(null);
           return;
         }
-
-        const info = projData.projectInfo;
-        const p = {
+        setProject({
           id: info.projectId,
           name: info.projectName,
           description: info.projectDesc || '',
-          hardware: info.holdings || {}
-        };
-        setProject(p);
-        setProjectHardware(p.hardware);
-
-        const formattedHw = (hwData.items || []).map(h => ({
-          key: h.id,
-          label: h.name,
-          capacity: h.total,
-          availability: h.available
-        }));
-        setHwSets(formattedHw);
-
-        const availMap = {};
-        formattedHw.forEach(h => {
-          availMap[h.key] = h.availability;
         });
-        setAvailability(availMap);
-
+        setRows((info.hardwareList || []).map((h) => ({
+          key: h.hardwareId,
+          label: h.name || h.hardwareId,
+          allocation: toCount(h.allocation),
+          reserved: toCount(h.reserved),
+          out: toCount(h.out),
+          remaining: toCount(h.remaining),
+        })));
       } catch (err) {
-        console.error(err);
-        setError(err.message);
+        if (!ignore) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
 
     fetchData();
+    return () => {
+      ignore = true;
+    };
   }, [projectId]);
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading project and hardware details...</div>;
@@ -157,21 +155,17 @@ const ProjectPage = () => {
         : await authService.checkOut(action);
 
       if (result.error) {
-        alert(`Error: ${result.error}`);
-        closeModal();
+        toast.error(result.error);
         return;
       }
 
-      // Update local state to reflect the confirmed change
-      if (mode === 'checkin') {
-        setProjectHardware((prev) => ({ ...prev, [hw.key]: Math.max(0, (prev[hw.key] || 0) - qty) }));
-        setAvailability((prev) => ({ ...prev, [hw.key]: Math.min(hw.capacity, (prev[hw.key] || 0) + qty) }));
-      } else {
-        setProjectHardware((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) + qty }));
-        setAvailability((prev) => ({ ...prev, [hw.key]: (prev[hw.key] || 0) - qty }));
-      }
+      const delta = mode === 'checkin' ? -qty : qty;
+      setRows((prev) => prev.map((r) => (r.key === hw.key
+        ? { ...r, out: Math.max(0, r.out + delta), remaining: Math.max(0, r.remaining - delta) }
+        : r)));
+      toast.success(`${mode === 'checkin' ? 'Checked in' : 'Checked out'} ${qty} × ${hw.label}`);
     } catch (err) {
-      alert('Network error: ' + err.message);
+      toast.error('Network error: ' + err.message);
     } finally {
       closeModal();
     }
@@ -183,15 +177,16 @@ const ProjectPage = () => {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('username');
-      localStorage.removeItem('token');
+      logout();
       navigate('/login');
     }
   };
 
+  const modalRow = modal.hw ? rows.find((r) => r.key === modal.hw.key) : null;
+  const maxQty = modalRow ? (modal.mode === 'checkin' ? modalRow.out : modalRow.remaining) : 0;
+
   return (
     <div className="app-container" id="project-page-container">
-      {/* Navbar */}
       <nav className="navbar" id="project-navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button className="btn btn-secondary" onClick={() => navigate('/landingPage')}>← Back</button>
@@ -202,7 +197,7 @@ const ProjectPage = () => {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span className="navbar-username">
-            Welcome, <strong>{(localStorage.getItem('username') && localStorage.getItem('username') !== 'undefined') ? localStorage.getItem('username') : 'User'}</strong>
+            Welcome, <strong>{user?.username || 'User'}</strong>
           </span>
           <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
         </div>
@@ -212,67 +207,68 @@ const ProjectPage = () => {
         <h1 className="page-title">{project.name}</h1>
         <p className="page-subtitle">{project.description}</p>
 
-        <h2 style={{ marginBottom: '16px' }}>Hardware Sets</h2>
+        <h2 style={{ marginBottom: '16px' }}>Hardware</h2>
 
-        {/* Hardware table */}
-        <table id="hardware-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <thead>
-            <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
-              <th style={thStyle}>Hardware Set</th>
-              <th style={thStyle}>Capacity</th>
-              <th style={thStyle}>Availability</th>
-              <th style={thStyle}>Check In</th>
-              <th style={thStyle}>Check Out</th>
-            </tr>
-          </thead>
-          <tbody>
-            {hwSets.map((hw, i) => (
-              <tr
-                key={hw.key}
-                id={`hw-row-${hw.key}`}
-                style={{ borderTop: i > 0 ? '1px solid #e2e8f0' : 'none' }}
-              >
-                <td style={tdStyle}><strong>{hw.label}</strong></td>
-                <td style={tdStyle}>{hw.capacity} units</td>
-                <td style={tdStyle}>
-                  <span style={{ color: availability[hw.key] > 0 ? '#16a34a' : '#dc2626', fontWeight: '600' }}>
-                    {availability[hw.key]} / {hw.capacity}
-                  </span>
-                </td>
-                <td style={tdStyle}>
-                  <button
-                    id={`btn-checkin-${hw.key}`}
-                    className="btn btn-secondary"
-                    disabled={!projectHardware[hw.key]}
-                    onClick={() => openModal(hw, 'checkin')}
-                  >
-                    Check In
-                  </button>
-                </td>
-                <td style={tdStyle}>
-                  <button
-                    id={`btn-checkout-${hw.key}`}
-                    className="btn btn-primary"
-                    disabled={!availability[hw.key]}
-                    onClick={() => openModal(hw, 'checkout')}
-                  >
-                    Check Out
-                  </button>
-                </td>
+        {rows.length === 0 ? (
+          <p style={{ color: '#64748b' }}>No hardware is allocated to this project.</p>
+        ) : (
+          <table id="hardware-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <thead>
+              <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
+                <th style={thStyle}>Hardware</th>
+                <th style={thStyle}>Planned</th>
+                <th style={thStyle}>Reserved</th>
+                <th style={thStyle}>Out</th>
+                <th style={thStyle}>Remaining</th>
+                <th style={thStyle}>Check In</th>
+                <th style={thStyle}>Check Out</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((hw, i) => (
+                <tr
+                  key={hw.key}
+                  id={`hw-row-${hw.key}`}
+                  style={{ borderTop: i > 0 ? '1px solid #e2e8f0' : 'none' }}
+                >
+                  <td style={tdStyle}><strong>{hw.label}</strong></td>
+                  <td style={tdStyle} data-label="planned">{hw.allocation}</td>
+                  <td style={tdStyle} data-label="reserved">{hw.reserved}</td>
+                  <td style={tdStyle} data-label="out">{hw.out}</td>
+                  <td style={tdStyle} data-label="remaining">
+                    <span style={{ color: hw.remaining > 0 ? '#16a34a' : '#dc2626', fontWeight: '600' }}>
+                      {hw.remaining}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <button
+                      id={`btn-checkin-${hw.key}`}
+                      className="btn btn-secondary"
+                      disabled={hw.out <= 0}
+                      onClick={() => openModal(hw, 'checkin')}
+                    >
+                      Check In
+                    </button>
+                  </td>
+                  <td style={tdStyle}>
+                    <button
+                      id={`btn-checkout-${hw.key}`}
+                      className="btn btn-primary"
+                      disabled={hw.remaining <= 0}
+                      onClick={() => openModal(hw, 'checkout')}
+                    >
+                      Check Out
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        {/* Small info note */}
         <p style={{ marginTop: '12px', fontSize: '0.85rem', color: '#94a3b8' }}>
-          This project currently holds: 
-          {hwSets.length === 0 ? ' None' : hwSets.map((hw, idx) => (
-            <span key={hw.key}>
-               {' '}{hw.label} — <strong>{projectHardware[hw.key] || 0}</strong> units
-              {idx < hwSets.length - 1 ? ' | ' : ''}
-            </span>
-          ))}
+          Planned is what the project asked for, reserved is what the Hardware service is holding for it,
+          out is checked out now, and remaining is what can still be checked out.
         </p>
       </main>
 
@@ -280,7 +276,7 @@ const ProjectPage = () => {
         isOpen={modal.open}
         hwLabel={modal.hw?.label}
         mode={modal.mode}
-        maxQty={modal.hw ? availability[modal.hw.key] : 0}
+        maxQty={maxQty}
         onConfirm={handleConfirm}
         onClose={closeModal}
       />
@@ -288,7 +284,6 @@ const ProjectPage = () => {
   );
 };
 
-// inline style helpers
 const thStyle = {
   padding: '12px 16px',
   fontSize: '0.85rem',

@@ -22,35 +22,40 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/projects.proto\x12\x0bprojects.v1\"5\n\x0cHardwareItem\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x10\n\x08\x63\x61pacity\x18\x02 \x01(\x05\"\xc5\x01\n\x07Project\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x14\n\x0cproject_desc\x18\x03 \x01(\t\x12\x12\n\ncreator_id\x18\x04 \x01(\t\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItem\x12\x14\n\x0cjoined_users\x18\x08 \x03(\t\"\xd2\x01\n\x14\x43reateProjectRequest\x12\x12\n\ncreator_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x14\n\x0cproject_name\x18\x03 \x01(\t\x12\x19\n\x0cproject_desc\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItemB\x0f\n\r_project_desc\"O\n\x18ProjectMembershipRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\"_\n\x15SearchProjectsRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x13\n\x06org_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x42\r\n\x0b_project_idB\t\n\x07_org_id\"J\n\x0eProjectSummary\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"K\n\x16SearchProjectsResponse\x12\x31\n\x0cproject_list\x18\x01 \x03(\x0b\x32\x1b.projects.v1.ProjectSummary\"7\n\x11GetProjectRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\"@\n\x12GetProjectResponse\x12*\n\x0cproject_info\x18\x01 \x01(\x0b\x32\x14.projects.v1.Project\";\n\x11OperationResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t2\xbc\x03\n\x0fProjectsService\x12R\n\rCreateProject\x12!.projects.v1.CreateProjectRequest\x1a\x1e.projects.v1.OperationResponse\x12T\n\x0bJoinProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12U\n\x0cLeaveProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12Y\n\x0eSearchProjects\x12\".projects.v1.SearchProjectsRequest\x1a#.projects.v1.SearchProjectsResponse\x12M\n\nGetProject\x12\x1e.projects.v1.GetProjectRequest\x1a\x1f.projects.v1.GetProjectResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/projects.proto\x12\x0bprojects.v1\x1a\x1cgoogle/protobuf/struct.proto\"7\n\x0cHardwareItem\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nallocation\x18\x02 \x01(\x05\"\xc5\x01\n\x07Project\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x14\n\x0cproject_desc\x18\x03 \x01(\t\x12\x12\n\ncreator_id\x18\x04 \x01(\t\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItem\x12\x14\n\x0cjoined_users\x18\x08 \x03(\t\"\xd2\x01\n\x14\x43reateProjectRequest\x12\x12\n\ncreator_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x14\n\x0cproject_name\x18\x03 \x01(\t\x12\x19\n\x0cproject_desc\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItemB\x0f\n\r_project_desc\"O\n\x18ProjectMembershipRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\"_\n\x15SearchProjectsRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x13\n\x06org_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x42\r\n\x0b_project_idB\t\n\x07_org_id\"J\n\x0eProjectSummary\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"K\n\x16SearchProjectsResponse\x12\x31\n\x0cproject_list\x18\x01 \x03(\x0b\x32\x1b.projects.v1.ProjectSummary\"7\n\x11GetProjectRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\"@\n\x12GetProjectResponse\x12*\n\x0cproject_info\x18\x01 \x01(\x0b\x32\x14.projects.v1.Project\";\n\x11OperationResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t\"3\n\nBudgetItem\x12\x13\n\x0b\x64\x65scription\x18\x01 \x01(\t\x12\x10\n\x08quantity\x18\x02 \x01(\x05\"^\n\x14\x42udgetContextRequest\x12\x0e\n\x06org_id\x18\x01 \x01(\t\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x01\x12&\n\x05items\x18\x03 \x03(\x0b\x32\x17.projects.v1.BudgetItem2\x8c\x04\n\x0fProjectsService\x12R\n\rCreateProject\x12!.projects.v1.CreateProjectRequest\x1a\x1e.projects.v1.OperationResponse\x12T\n\x0bJoinProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12U\n\x0cLeaveProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12Y\n\x0eSearchProjects\x12\".projects.v1.SearchProjectsRequest\x1a#.projects.v1.SearchProjectsResponse\x12M\n\nGetProject\x12\x1e.projects.v1.GetProjectRequest\x1a\x1f.projects.v1.GetProjectResponse\x12N\n\x10GetBudgetContext\x12!.projects.v1.BudgetContextRequest\x1a\x17.google.protobuf.Structb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.projects_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_HARDWAREITEM']._serialized_start=37
-  _globals['_HARDWAREITEM']._serialized_end=90
-  _globals['_PROJECT']._serialized_start=93
-  _globals['_PROJECT']._serialized_end=290
-  _globals['_CREATEPROJECTREQUEST']._serialized_start=293
-  _globals['_CREATEPROJECTREQUEST']._serialized_end=503
-  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_start=505
-  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_end=584
-  _globals['_SEARCHPROJECTSREQUEST']._serialized_start=586
-  _globals['_SEARCHPROJECTSREQUEST']._serialized_end=681
-  _globals['_PROJECTSUMMARY']._serialized_start=683
-  _globals['_PROJECTSUMMARY']._serialized_end=757
-  _globals['_SEARCHPROJECTSRESPONSE']._serialized_start=759
-  _globals['_SEARCHPROJECTSRESPONSE']._serialized_end=834
-  _globals['_GETPROJECTREQUEST']._serialized_start=836
-  _globals['_GETPROJECTREQUEST']._serialized_end=891
-  _globals['_GETPROJECTRESPONSE']._serialized_start=893
-  _globals['_GETPROJECTRESPONSE']._serialized_end=957
-  _globals['_OPERATIONRESPONSE']._serialized_start=959
-  _globals['_OPERATIONRESPONSE']._serialized_end=1018
-  _globals['_PROJECTSSERVICE']._serialized_start=1021
-  _globals['_PROJECTSSERVICE']._serialized_end=1465
+  _globals['_HARDWAREITEM']._serialized_start=67
+  _globals['_HARDWAREITEM']._serialized_end=122
+  _globals['_PROJECT']._serialized_start=125
+  _globals['_PROJECT']._serialized_end=322
+  _globals['_CREATEPROJECTREQUEST']._serialized_start=325
+  _globals['_CREATEPROJECTREQUEST']._serialized_end=535
+  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_start=537
+  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_end=616
+  _globals['_SEARCHPROJECTSREQUEST']._serialized_start=618
+  _globals['_SEARCHPROJECTSREQUEST']._serialized_end=713
+  _globals['_PROJECTSUMMARY']._serialized_start=715
+  _globals['_PROJECTSUMMARY']._serialized_end=789
+  _globals['_SEARCHPROJECTSRESPONSE']._serialized_start=791
+  _globals['_SEARCHPROJECTSRESPONSE']._serialized_end=866
+  _globals['_GETPROJECTREQUEST']._serialized_start=868
+  _globals['_GETPROJECTREQUEST']._serialized_end=923
+  _globals['_GETPROJECTRESPONSE']._serialized_start=925
+  _globals['_GETPROJECTRESPONSE']._serialized_end=989
+  _globals['_OPERATIONRESPONSE']._serialized_start=991
+  _globals['_OPERATIONRESPONSE']._serialized_end=1050
+  _globals['_BUDGETITEM']._serialized_start=1052
+  _globals['_BUDGETITEM']._serialized_end=1103
+  _globals['_BUDGETCONTEXTREQUEST']._serialized_start=1105
+  _globals['_BUDGETCONTEXTREQUEST']._serialized_end=1199
+  _globals['_PROJECTSSERVICE']._serialized_start=1202
+  _globals['_PROJECTSSERVICE']._serialized_end=1726
 # @@protoc_insertion_point(module_scope)

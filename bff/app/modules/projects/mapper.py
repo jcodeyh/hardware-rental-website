@@ -17,7 +17,8 @@ def create_to_json(request):
         "hardwareList": [
             {
                 "hardwareId": item.hardware_id,
-                "capacity": item.capacity,
+                "allocation": item.allocation,
+                "capacity": item.allocation,
             }
             for item in request.hardware_list
         ],
@@ -63,9 +64,20 @@ def project_to_proto(data):
         hardware_list=[
             pb.HardwareItem(
                 hardware_id=item["hardwareId"],
-                capacity=item["capacity"],
+                allocation=item.get("allocation", item.get("capacity", 0)),
             )
             for item in data.get("hardwareList", [])
         ],
         joined_users=data.get("joined_users", []),
     )
+
+
+def budget_context_to_json(request):
+    return {
+        "orgId": request.org_id,
+        "budget": request.budget,
+        "items": [
+            {"description": item.description, "quantity": item.quantity}
+            for item in request.items
+        ],
+    }

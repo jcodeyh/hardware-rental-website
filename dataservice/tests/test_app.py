@@ -15,8 +15,9 @@ class FakeRepository:
             {"government": "Dallas", "records": 3, "first_date": datetime(2025, 10, 1), "last_date": datetime(2026, 10, 20)},
         ]
 
-    def summary(self, government, date_from, date_to):
+    def summary(self, government, date_from, date_to, keywords=None):
         self.calls.append((government, date_from, date_to))
+        self.keywords = keywords
         if date_from and date_from.year >= 2030:
             return {"price_basis": "unitPrice", "categories": [], "prices": {}, "vendors": []}
         return {
@@ -94,3 +95,38 @@ def test_database_error_is_json(repo):
     resp = create_app(repo).test_client().get("/api/data/governments/Austin/summary")
     assert resp.status_code == 503
     assert resp.get_json()["success"] is False
+
+
+def test_match_expands_hardware_types_to_purchase_keywords(client, repo):
+    body = client.get("/api/data/governments/Austin/summary?match=Laptops, Monitor ,laptops").get_json()
+    assert body["success"] is True
+    assert body["match"] == ["laptops", "monitor"]
+    assert repo.keywords == ["laptop", "notebook", "monitor", "display"]
+
+
+def test_no_match_means_no_keyword_filter(client, repo):
+    body = client.get("/api/data/governments/Austin/summary").get_json()
+    assert body["match"] == []
+    assert repo.keywords is None
+
+
+@pytest.mark.parametrize("query", ["match=x", "match=" + ",".join(f"type{i}" for i in range(11)), "match=a%25b"])
+def test_bad_match(client, query):
+    resp = client.get(f"/api/data/governments/Austin/summary?{query}")
+    assert resp.status_code == 400
+    assert "match" in resp.get_json()["message"]
+
+
+def test_empty_match_message_names_the_terms(client, repo):
+    repo.summary = lambda *a, **k: {"price_basis": "unitPrice", "categories": [], "prices": {}, "vendors": []}
+    body = client.get("/api/data/governments/Dallas/summary?match=drone").get_json()
+    assert body["message"] == "No Dallas purchases match drone in this date range."
+
+
+def test_category_match_sql_is_parameterized_and_escaped():
+    from db import _sql_top_vendors, category_match
+    clause, params = category_match(["laptop", "50%_off[x]"])
+    assert clause == " AND (LOWER(category) LIKE ? ESCAPE '\\' OR LOWER(category) LIKE ? ESCAPE '\\')"
+    assert params == ["%laptop%", "%50\\%\\_off\\[x]%"]
+    assert category_match(None) == ("", [])
+    assert clause in _sql_top_vendors(clause)

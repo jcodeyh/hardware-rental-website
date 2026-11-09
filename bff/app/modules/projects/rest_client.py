@@ -4,6 +4,8 @@ from urllib.parse import quote
 
 import httpx
 
+BUDGET_TIMEOUT_SECONDS = 75.0
+
 
 class ProjectsRestClient:
     def __init__(self, base_url: str, timeout: float = 15.0):
@@ -58,6 +60,9 @@ class ProjectsRestClient:
             f"projects/{encoded_id}",
             params={"orgId": org_id},
         )
-    
+
+    async def get_budget_context(self, data: dict) -> dict:
+        return await self._request("POST", "get_budget_context", json=data, timeout=BUDGET_TIMEOUT_SECONDS)
+
     async def close(self) -> None:
         await self.client.aclose()

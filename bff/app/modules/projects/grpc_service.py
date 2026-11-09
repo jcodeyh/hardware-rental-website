@@ -1,12 +1,14 @@
 
 import grpc
 import httpx
+from google.protobuf import json_format, struct_pb2
 
 from app.core.upstream import upstream_message
 from proto import projects_pb2 as pb
 from proto import projects_pb2_grpc as pb_grpc
 
 from .mapper import (
+    budget_context_to_json,
     create_to_json,
     membership_to_json,
     search_to_json,
@@ -89,7 +91,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
             or request.budget < 0
             or any(
                 not item.hardware_id.strip()
-                or item.capacity <= 0
+                or item.allocation <= 0
                 for item in request.hardware_list
             )
         ):
@@ -183,5 +185,23 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
                     result["projectInfo"]
                 )
             )
+
+        return await self._execute(context, operation)
+
+    async def GetBudgetContext(self, request, context):
+        if (
+            not request.org_id.strip()
+            or request.budget < 0
+            or not request.items
+            or any(not i.description.strip() or i.quantity <= 0 for i in request.items)
+        ):
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Organization, budget and at least one item with a quantity are required",
+            )
+
+        async def operation():
+            result = await self.client.get_budget_context(budget_context_to_json(request))
+            return json_format.ParseDict(result, struct_pb2.Struct())
 
         return await self._execute(context, operation)

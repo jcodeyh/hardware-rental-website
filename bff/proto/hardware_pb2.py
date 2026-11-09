@@ -24,31 +24,39 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/hardware.proto\x12\x0bhardware.v1\"q\n\x0f\x43heckOutRequest\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x05\x12\x12\n\nrequest_id\x18\x05 \x01(\t\"p\n\x0e\x43heckInRequest\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x05\x12\x12\n\nrequest_id\x18\x05 \x01(\t\")\n\x16HardwareActionResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"(\n\x12GetHoldingsRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\"0\n\x07Holding\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x10\n\x08quantity\x18\x02 \x01(\x05\"=\n\x13GetHoldingsResponse\x12&\n\x08holdings\x18\x01 \x03(\x0b\x32\x14.hardware.v1.Holding\"S\n\x13ListHardwareRequest\x12\x0c\n\x04page\x18\x01 \x01(\x05\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"\xaf\x01\n\x0cHardwareItem\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x11\n\tasset_tag\x18\x04 \x01(\t\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\r\n\x05total\x18\x06 \x01(\x05\x12\x0b\n\x03out\x18\x07 \x01(\x05\x12\x10\n\x08reserved\x18\x08 \x01(\x05\x12\x0f\n\x07version\x18\t \x01(\x05\x12\x11\n\tavailable\x18\n \x01(\x05\"k\n\x14ListHardwareResponse\x12(\n\x05items\x18\x01 \x03(\x0b\x32\x19.hardware.v1.HardwareItem\x12\r\n\x05total\x18\x02 \x01(\x05\x12\x0c\n\x04page\x18\x03 \x01(\x05\x12\x0c\n\x04size\x18\x04 \x01(\x05\x32\xd4\x02\n\x0fHardwareService\x12S\n\x0cListHardware\x12 .hardware.v1.ListHardwareRequest\x1a!.hardware.v1.ListHardwareResponse\x12M\n\x08\x43heckOut\x12\x1c.hardware.v1.CheckOutRequest\x1a#.hardware.v1.HardwareActionResponse\x12K\n\x07\x43heckIn\x12\x1b.hardware.v1.CheckInRequest\x1a#.hardware.v1.HardwareActionResponse\x12P\n\x0bGetHoldings\x12\x1f.hardware.v1.GetHoldingsRequest\x1a .hardware.v1.GetHoldingsResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/hardware.proto\x12\x0f\x62\x66\x66.hardware.v1\"q\n\x0f\x43heckOutRequest\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x05\x12\x12\n\nrequest_id\x18\x05 \x01(\t\"p\n\x0e\x43heckInRequest\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x05\x12\x12\n\nrequest_id\x18\x05 \x01(\t\")\n\x16HardwareActionResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"/\n\x19GetProjectHardwareRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\"e\n\x0fProjectHardware\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x10\n\x08reserved\x18\x04 \x01(\x03\x12\x0b\n\x03out\x18\x05 \x01(\x03\"M\n\x1aGetProjectHardwareResponse\x12/\n\x05items\x18\x01 \x03(\x0b\x32 .bff.hardware.v1.ProjectHardware\"x\n\x16ReserveHardwareRequest\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x03\x12\x12\n\nrequest_id\x18\x05 \x01(\t\")\n\x16GetUserHardwareRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\"j\n\x0cUserHardware\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x10\n\x08quantity\x18\x04 \x01(\x03\x12\x13\n\x0boutstanding\x18\x05 \x01(\x03\"G\n\x17GetUserHardwareResponse\x12,\n\x05items\x18\x01 \x03(\x0b\x32\x1d.bff.hardware.v1.UserHardware\"S\n\x13ListHardwareRequest\x12\x0c\n\x04page\x18\x01 \x01(\x05\x12\x0c\n\x04size\x18\x02 \x01(\x05\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"\xaf\x01\n\x0cHardwareItem\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x11\n\tasset_tag\x18\x04 \x01(\t\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\r\n\x05total\x18\x06 \x01(\x03\x12\x0b\n\x03out\x18\x07 \x01(\x03\x12\x10\n\x08reserved\x18\x08 \x01(\x03\x12\x0f\n\x07version\x18\t \x01(\x03\x12\x11\n\tavailable\x18\n \x01(\x03\"o\n\x14ListHardwareResponse\x12,\n\x05items\x18\x01 \x03(\x0b\x32\x1d.bff.hardware.v1.HardwareItem\x12\r\n\x05total\x18\x02 \x01(\x03\x12\x0c\n\x04page\x18\x03 \x01(\x03\x12\x0c\n\x04size\x18\x04 \x01(\x03\x32\xd4\x04\n\x0fHardwareService\x12[\n\x0cListHardware\x12$.bff.hardware.v1.ListHardwareRequest\x1a%.bff.hardware.v1.ListHardwareResponse\x12U\n\x08\x43heckOut\x12 .bff.hardware.v1.CheckOutRequest\x1a\'.bff.hardware.v1.HardwareActionResponse\x12S\n\x07\x43heckIn\x12\x1f.bff.hardware.v1.CheckInRequest\x1a\'.bff.hardware.v1.HardwareActionResponse\x12m\n\x12GetProjectHardware\x12*.bff.hardware.v1.GetProjectHardwareRequest\x1a+.bff.hardware.v1.GetProjectHardwareResponse\x12\x63\n\x0fReserveHardware\x12\'.bff.hardware.v1.ReserveHardwareRequest\x1a\'.bff.hardware.v1.HardwareActionResponse\x12\x64\n\x0fGetUserHardware\x12\'.bff.hardware.v1.GetUserHardwareRequest\x1a(.bff.hardware.v1.GetUserHardwareResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.hardware_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_CHECKOUTREQUEST']._serialized_start=37
-  _globals['_CHECKOUTREQUEST']._serialized_end=150
-  _globals['_CHECKINREQUEST']._serialized_start=152
-  _globals['_CHECKINREQUEST']._serialized_end=264
-  _globals['_HARDWAREACTIONRESPONSE']._serialized_start=266
-  _globals['_HARDWAREACTIONRESPONSE']._serialized_end=307
-  _globals['_GETHOLDINGSREQUEST']._serialized_start=309
-  _globals['_GETHOLDINGSREQUEST']._serialized_end=349
-  _globals['_HOLDING']._serialized_start=351
-  _globals['_HOLDING']._serialized_end=399
-  _globals['_GETHOLDINGSRESPONSE']._serialized_start=401
-  _globals['_GETHOLDINGSRESPONSE']._serialized_end=462
-  _globals['_LISTHARDWAREREQUEST']._serialized_start=464
-  _globals['_LISTHARDWAREREQUEST']._serialized_end=547
-  _globals['_HARDWAREITEM']._serialized_start=550
-  _globals['_HARDWAREITEM']._serialized_end=725
-  _globals['_LISTHARDWARERESPONSE']._serialized_start=727
-  _globals['_LISTHARDWARERESPONSE']._serialized_end=834
-  _globals['_HARDWARESERVICE']._serialized_start=837
-  _globals['_HARDWARESERVICE']._serialized_end=1177
+  _globals['_CHECKOUTREQUEST']._serialized_start=41
+  _globals['_CHECKOUTREQUEST']._serialized_end=154
+  _globals['_CHECKINREQUEST']._serialized_start=156
+  _globals['_CHECKINREQUEST']._serialized_end=268
+  _globals['_HARDWAREACTIONRESPONSE']._serialized_start=270
+  _globals['_HARDWAREACTIONRESPONSE']._serialized_end=311
+  _globals['_GETPROJECTHARDWAREREQUEST']._serialized_start=313
+  _globals['_GETPROJECTHARDWAREREQUEST']._serialized_end=360
+  _globals['_PROJECTHARDWARE']._serialized_start=362
+  _globals['_PROJECTHARDWARE']._serialized_end=463
+  _globals['_GETPROJECTHARDWARERESPONSE']._serialized_start=465
+  _globals['_GETPROJECTHARDWARERESPONSE']._serialized_end=542
+  _globals['_RESERVEHARDWAREREQUEST']._serialized_start=544
+  _globals['_RESERVEHARDWAREREQUEST']._serialized_end=664
+  _globals['_GETUSERHARDWAREREQUEST']._serialized_start=666
+  _globals['_GETUSERHARDWAREREQUEST']._serialized_end=707
+  _globals['_USERHARDWARE']._serialized_start=709
+  _globals['_USERHARDWARE']._serialized_end=815
+  _globals['_GETUSERHARDWARERESPONSE']._serialized_start=817
+  _globals['_GETUSERHARDWARERESPONSE']._serialized_end=888
+  _globals['_LISTHARDWAREREQUEST']._serialized_start=890
+  _globals['_LISTHARDWAREREQUEST']._serialized_end=973
+  _globals['_HARDWAREITEM']._serialized_start=976
+  _globals['_HARDWAREITEM']._serialized_end=1151
+  _globals['_LISTHARDWARERESPONSE']._serialized_start=1153
+  _globals['_LISTHARDWARERESPONSE']._serialized_end=1264
+  _globals['_HARDWARESERVICE']._serialized_start=1267
+  _globals['_HARDWARESERVICE']._serialized_end=1863
 # @@protoc_insertion_point(module_scope)

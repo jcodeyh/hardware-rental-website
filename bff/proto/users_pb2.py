@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11proto/users.proto\x12\x08users.v1\"9\n\x04User\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"C\n\rSignUpRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\",\n\x0cUserResponse\x12\x1c\n\x04user\x18\x01 \x01(\x0b\x32\x0e.users.v1.User2\x82\x01\n\x0cUsersService\x12\x39\n\x06SignUp\x12\x17.users.v1.SignUpRequest\x1a\x16.users.v1.UserResponse\x12\x37\n\x05Login\x12\x16.users.v1.LoginRequest\x1a\x16.users.v1.UserResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11proto/users.proto\x12\x08users.v1\"9\n\x04User\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"V\n\rSignUpRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\x12\x11\n\tclient_ip\x18\x04 \x01(\t\"E\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x11\n\tclient_ip\x18\x03 \x01(\t\"S\n\rLoginResponse\x12\x1c\n\x04user\x18\x01 \x01(\x0b\x32\x0e.users.v1.User\x12\x11\n\tmfa_token\x18\x02 \x01(\t\x12\x11\n\tnext_step\x18\x03 \x01(\t\"=\n\x15TwoFactorSetupRequest\x12\x11\n\tmfa_token\x18\x01 \x01(\t\x12\x11\n\tclient_ip\x18\x02 \x01(\t\"B\n\x16TwoFactorSetupResponse\x12\x18\n\x10qr_code_data_url\x18\x01 \x01(\t\x12\x0e\n\x06secret\x18\x02 \x01(\t\"Z\n\x14TwoFactorCodeRequest\x12\x11\n\tmfa_token\x18\x01 \x01(\t\x12\x0c\n\x04\x63ode\x18\x02 \x01(\t\x12\x0e\n\x06\x65nroll\x18\x03 \x01(\x08\x12\x11\n\tclient_ip\x18\x04 \x01(\t\",\n\x0cUserResponse\x12\x1c\n\x04user\x18\x01 \x01(\x0b\x32\x0e.users.v1.User2\xa5\x02\n\x0cUsersService\x12\x39\n\x06SignUp\x12\x17.users.v1.SignUpRequest\x1a\x16.users.v1.UserResponse\x12\x38\n\x05Login\x12\x16.users.v1.LoginRequest\x1a\x17.users.v1.LoginResponse\x12S\n\x0eSetupTwoFactor\x12\x1f.users.v1.TwoFactorSetupRequest\x1a .users.v1.TwoFactorSetupResponse\x12K\n\x11\x43ompleteTwoFactor\x12\x1e.users.v1.TwoFactorCodeRequest\x1a\x16.users.v1.UserResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,11 +34,19 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_USER']._serialized_start=31
   _globals['_USER']._serialized_end=88
   _globals['_SIGNUPREQUEST']._serialized_start=90
-  _globals['_SIGNUPREQUEST']._serialized_end=157
-  _globals['_LOGINREQUEST']._serialized_start=159
-  _globals['_LOGINREQUEST']._serialized_end=209
-  _globals['_USERRESPONSE']._serialized_start=211
-  _globals['_USERRESPONSE']._serialized_end=255
-  _globals['_USERSSERVICE']._serialized_start=258
-  _globals['_USERSSERVICE']._serialized_end=388
+  _globals['_SIGNUPREQUEST']._serialized_end=176
+  _globals['_LOGINREQUEST']._serialized_start=178
+  _globals['_LOGINREQUEST']._serialized_end=247
+  _globals['_LOGINRESPONSE']._serialized_start=249
+  _globals['_LOGINRESPONSE']._serialized_end=332
+  _globals['_TWOFACTORSETUPREQUEST']._serialized_start=334
+  _globals['_TWOFACTORSETUPREQUEST']._serialized_end=395
+  _globals['_TWOFACTORSETUPRESPONSE']._serialized_start=397
+  _globals['_TWOFACTORSETUPRESPONSE']._serialized_end=463
+  _globals['_TWOFACTORCODEREQUEST']._serialized_start=465
+  _globals['_TWOFACTORCODEREQUEST']._serialized_end=555
+  _globals['_USERRESPONSE']._serialized_start=557
+  _globals['_USERRESPONSE']._serialized_end=601
+  _globals['_USERSSERVICE']._serialized_start=604
+  _globals['_USERSSERVICE']._serialized_end=897
 # @@protoc_insertion_point(module_scope)

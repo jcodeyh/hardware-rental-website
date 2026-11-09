@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import ProjectList from '../components/ProjectList';
 import JoinProjectModal from '../components/JoinProjectModal';
 import AddProjectModal from '../components/AddProjectModal';
+import { toast } from 'react-toastify';
 import authService from '../service/authService';
 
 const LandingPage = () => {
@@ -66,20 +67,24 @@ const LandingPage = () => {
         projectId: newProject.id,
         projectName: newProject.name,
         projectDesc: newProject.description,
-        budget: newProject.budget
+        budget: newProject.budget,
+        hardwareList: newProject.hardwareList || []
       });
 
       if (result.error) {
-        alert('Could not create project: ' + result.error);
+        toast.error('Could not create project: ' + result.error);
         return;
       }
+
+      toast.success(`Project ${newProject.id} created`);
+      (result.warnings || []).forEach((w) => toast.warning(w));
 
       // Re-fetch user projects from backend after creating
       await fetchProjects();
       setIsAddModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Network error: ' + err.message);
+      toast.error('Network error: ' + err.message);
     }
   };
 
