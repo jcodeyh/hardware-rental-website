@@ -66,24 +66,27 @@ SELECT CASE WHEN EXISTS (SELECT 1 FROM gov.purchases WHERE government = ? AND un
             THEN 1 ELSE 0 END;
 """
 
-SQL_TOP_CATEGORIES = f"""
+def _sql_top_categories(match=""):
+    return f"""
 SELECT TOP ({TOP_N}) category,
        COUNT(*) AS purchases,
        SUM(CASE WHEN amount > 0 THEN amount END) AS total_amount
 FROM gov.purchases
-WHERE {_FILTER} AND category IS NOT NULL
+WHERE {_FILTER} AND category IS NOT NULL{match}
 GROUP BY category
 ORDER BY COUNT(*) DESC, category;
 """
 
+
 # Price rules (requirements 5.2): positive values only; median, 25th and 75th
 # percentile (PERCENTILE_CONT interpolates, like numpy's default). The
 # 3-purchase minimum and rounding are applied in Python.
-SQL_TYPICAL_PRICES = f"""
+def _sql_typical_prices(match=""):
+    return f"""
 WITH top_categories AS (
     SELECT TOP ({TOP_N}) category
     FROM gov.purchases
-    WHERE {_FILTER} AND category IS NOT NULL
+    WHERE {_FILTER} AND category IS NOT NULL{match}
     GROUP BY category
     ORDER BY COUNT(*) DESC, category
 ),
@@ -103,15 +106,29 @@ FROM vals
 WHERE v > 0;
 """
 
-SQL_TOP_VENDORS = f"""
+
+def _sql_top_vendors(match=""):
+    return f"""
 SELECT TOP ({TOP_N}) vendor,
        COUNT(*) AS purchases,
        SUM(CASE WHEN amount > 0 THEN amount END) AS total_amount
 FROM gov.purchases
-WHERE {_FILTER} AND vendor IS NOT NULL
+WHERE {_FILTER} AND vendor IS NOT NULL{match}
 GROUP BY vendor
 ORDER BY COUNT(*) DESC, vendor;
 """
+
+
+def _like_pattern(keyword):
+    escaped = keyword.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[")
+    return f"%{escaped}%"
+
+
+def category_match(keywords):
+    if not keywords:
+        return "", []
+    clause = " OR ".join("LOWER(category) LIKE ? ESCAPE '\\'" for _ in keywords)
+    return f" AND ({clause})", [_like_pattern(k) for k in keywords]
 
 
 class SqlRepository:
@@ -126,16 +143,17 @@ class SqlRepository:
             for r in rows
         ]
 
-    def summary(self, government, date_from=None, date_to=None):
+    def summary(self, government, date_from=None, date_to=None, keywords=None):
         start = date_from or MIN_DATE
         end = (date_to + timedelta(days=1)) if date_to else MAX_DATE  # `to` is inclusive
         f = (government, start, end)
+        match, patterns = category_match(keywords)
         with connect() as conn:
             cur = conn.cursor()
             use_unit_price = cur.execute(SQL_HAS_UNIT_PRICE, government).fetchval()
-            categories = cur.execute(SQL_TOP_CATEGORIES, *f).fetchall()
-            prices = cur.execute(SQL_TYPICAL_PRICES, *f, use_unit_price, *f).fetchall()
-            vendors = cur.execute(SQL_TOP_VENDORS, *f).fetchall()
+            categories = cur.execute(_sql_top_categories(match), *f, *patterns).fetchall()
+            prices = cur.execute(_sql_typical_prices(match), *f, *patterns, use_unit_price, *f).fetchall()
+            vendors = cur.execute(_sql_top_vendors(match), *f, *patterns).fetchall()
         return {
             "price_basis": "unitPrice" if use_unit_price else "payment",
             "categories": [{"category": r.category, "purchases": r.purchases,
