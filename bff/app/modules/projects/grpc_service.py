@@ -102,7 +102,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
 
         async def operation():
             result = await self.client.create_project(
-                create_to_json(request)
+                create_to_json(request, getattr(self.client, "hardware_item_field", "capacity"))
             )
 
             return pb.OperationResponse(
@@ -185,6 +185,33 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
                     result["projectInfo"]
                 )
             )
+
+        return await self._execute(context, operation)
+
+
+    async def GetUnitPrice(self, request, context):
+        if not request.category.strip():
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Category is required",
+            )
+
+        async def operation():
+            result = await self.client.get_unit_price(request.category)
+            return json_format.ParseDict(result, struct_pb2.Struct())
+
+        return await self._execute(context, operation)
+
+    async def GetDepartmentSpend(self, request, context):
+        if len(request.keyword.strip()) < 3:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Keyword must be at least 3 characters",
+            )
+
+        async def operation():
+            result = await self.client.get_department_spend(request.keyword)
+            return json_format.ParseDict(result, struct_pb2.Struct())
 
         return await self._execute(context, operation)
 

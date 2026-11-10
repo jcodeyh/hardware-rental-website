@@ -12,6 +12,8 @@ service ProjectsService {
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse);
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
   rpc GetBudgetContext(BudgetContextRequest) returns (google.protobuf.Struct);
+  rpc GetUnitPrice(UnitPriceRequest) returns (google.protobuf.Struct);
+  rpc GetDepartmentSpend(DepartmentSpendRequest) returns (google.protobuf.Struct);
 }
 
 message HardwareItem {
@@ -84,4 +86,12 @@ message BudgetContextRequest {
   string org_id = 1;
   double budget = 2;
   repeated BudgetItem items = 3;
+}
+
+message UnitPriceRequest {
+  string category = 1;
+}
+
+message DepartmentSpendRequest {
+  string keyword = 1;
 }

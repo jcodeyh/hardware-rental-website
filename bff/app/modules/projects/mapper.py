@@ -2,7 +2,17 @@
 from proto import projects_pb2 as pb
 
 
-def create_to_json(request):
+def create_to_json(request, hardware_field="capacity"):
+    hardware_list = []
+
+    for item in request.hardware_list:
+        quantity = item.allocation
+        hardware_list.append({
+            "hardwareId": item.hardware_id,
+            "allocation": quantity,
+            "capacity": quantity,
+        })
+
     return {
         "creatorId": request.creator_id,
         "projectId": request.project_id,
@@ -14,14 +24,7 @@ def create_to_json(request):
         ),
         "orgId": request.org_id,
         "budget": request.budget,
-        "hardwareList": [
-            {
-                "hardwareId": item.hardware_id,
-                "allocation": item.allocation,
-                "capacity": item.allocation,
-            }
-            for item in request.hardware_list
-        ],
+        "hardwareList": hardware_list,
     }
 
 
