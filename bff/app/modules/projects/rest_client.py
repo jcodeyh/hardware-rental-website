@@ -8,10 +8,18 @@ BUDGET_TIMEOUT_SECONDS = 75.0
 
 
 class ProjectsRestClient:
-    def __init__(self, base_url: str, timeout: float = 15.0):
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = 15.0,
+        hardware_item_field: str = "capacity",
+    ):
         if not base_url:
             raise ValueError("Projects API base URL is required")
 
+        if hardware_item_field not in {"allocation", "capacity"}:
+            raise ValueError("PROJECTS_HARDWARE_FIELD must be allocation or capacity")
+        self.hardware_item_field = hardware_item_field
         self.client = httpx.AsyncClient(
             base_url=base_url.rstrip("/") + "/",
             timeout=timeout,
@@ -61,8 +69,16 @@ class ProjectsRestClient:
             params={"orgId": org_id},
         )
 
+    async def get_unit_price(self, category: str) -> dict:
+        return await self._request("POST", "get_unit_price", json={"category": category})
+
+    async def get_department_spend(self, keyword: str) -> dict:
+        return await self._request("POST", "get_department_spend", json={"keyword": keyword})
+
     async def get_budget_context(self, data: dict) -> dict:
-        return await self._request("POST", "get_budget_context", json=data, timeout=BUDGET_TIMEOUT_SECONDS)
+        return await self._request(
+            "POST", "get_budget_context", json=data, timeout=BUDGET_TIMEOUT_SECONDS
+        )
 
     async def close(self) -> None:
         await self.client.aclose()

@@ -98,6 +98,14 @@ class BudgetContextBody(BaseModel):
     items: list[BudgetItemBody] = Field(min_length=1, max_length=20)
 
 
+class UnitPriceBody(BaseModel):
+    category: str = Field(min_length=1, max_length=200)
+
+
+class DepartmentSpendBody(BaseModel):
+    keyword: str = Field(min_length=3, max_length=200)
+
+
 @app.exception_handler(StarletteHTTPException)
 async def http_error_response(request: Request, error: StarletteHTTPException):
     return JSONResponse({"error": error.detail}, status_code=error.status_code)
@@ -620,6 +628,40 @@ async def my_hardware(request: Request, user: dict = Depends(_current_user)):
     ]
     categories = sorted({x["category"].strip() for x in items if x["category"].strip()}, key=str.lower)
     return {"categories": categories, "items": items}
+
+
+@app.post("/unit-price")
+async def unit_price(
+    body: UnitPriceBody,
+    request: Request,
+    user: dict = Depends(_current_user),
+):
+    stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
+    try:
+        result = await stub.GetUnitPrice(
+            projects_pb2.UnitPriceRequest(category=body.category),
+            timeout=30,
+        )
+    except grpc.aio.AioRpcError as error:
+        _grpc_error(error)
+    return json_format.MessageToDict(result)
+
+
+@app.post("/department-spend")
+async def department_spend(
+    body: DepartmentSpendBody,
+    request: Request,
+    user: dict = Depends(_current_user),
+):
+    stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
+    try:
+        result = await stub.GetDepartmentSpend(
+            projects_pb2.DepartmentSpendRequest(keyword=body.keyword),
+            timeout=30,
+        )
+    except grpc.aio.AioRpcError as error:
+        _grpc_error(error)
+    return json_format.MessageToDict(result)
 
 
 @app.post("/budget-context")

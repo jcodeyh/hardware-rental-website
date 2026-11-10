@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     projects_api_base_url: str = ""
     projects_api_timeout: float = 15.0
+    projects_hardware_field: str = "capacity"
 
     hardware_grpc_target: str = ""
     hardware_grpc_tls: bool = True
