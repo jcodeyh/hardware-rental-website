@@ -626,7 +626,10 @@ async def my_hardware(request: Request, user: dict = Depends(_current_user)):
         }
         for x in result.items
     ]
-    categories = sorted({x["category"].strip() for x in items if x["category"].strip()}, key=str.lower)
+    categories = sorted(
+        {x["category"].strip() for x in items if x["outstanding"] > 0 and x["category"].strip()},
+        key=str.lower,
+    )
     return {"categories": categories, "items": items}
 
 

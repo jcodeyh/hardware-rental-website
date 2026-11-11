@@ -440,7 +440,7 @@ async def test_check_in_rejects_more_than_held(bff):
 
 
 @pytest.mark.asyncio
-async def test_my_hardware_lists_categories_including_returned(bff):
+async def test_my_hardware_lists_only_categories_currently_held(bff):
     client, _, upstream = bff
     await _log_in(client)
     assert (await client.get("/dashboard/my-hardware")).json() == {"categories": [], "items": []}
@@ -458,7 +458,7 @@ async def test_my_hardware_lists_categories_including_returned(bff):
         "projectId": "P_OWN", "hardwareId": "hw2", "quantity": 1, "requestId": "d",
     })
     body = (await client.get("/dashboard/my-hardware")).json()
-    assert body["categories"] == ["Laptop", "Monitor"]
+    assert body["categories"] == ["Monitor"]
     by_id = {item["hardwareId"]: item for item in body["items"]}
     assert by_id["hw1"] == {"hardwareId": "hw1", "name": "Monitor", "category": "Monitor",
                             "quantity": 2, "outstanding": 2}
