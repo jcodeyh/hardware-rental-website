@@ -17,7 +17,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import get_settings
 from proto import projects_pb2, projects_pb2_grpc
 from proto import hardware_pb2, hardware_pb2_grpc
-from proto import users_pb2, users_pb2_grpc
 
 logger = logging.getLogger(__name__)
 
@@ -150,26 +149,19 @@ def _current_user(request: Request) -> dict:
     return user
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    first = forwarded.split(",")[0].strip()
-    if first:
-        return first
-    return request.client.host if request.client else ""
-
-
 def _user_json(user):
     return {
-        "userId": user.user_id,
+        "userId": user.id,
         "username": user.username,
-        "orgId": user.org_id,
+        "orgId": user.agency_code,
     }
 
 
-def _start_session(request: Request, user) -> dict:
+def _start_session(request: Request, user, access_token: str) -> dict:
     data = _user_json(user)
     request.session.clear()
     request.session["user"] = data
+    request.session["access_token"] = access_token
     return data
 
 
@@ -245,38 +237,20 @@ async def health():
 
 @app.post("/auth/signup", status_code=201)
 async def signup(body: SignUpBody, request: Request):
-    stub = users_pb2_grpc.UsersServiceStub(_channel(request))
     try:
-        result = await stub.SignUp(
-            users_pb2.SignUpRequest(
-                username=body.username,
-                password=body.password,
-                org_id=body.agency_code,
-                client_ip=_client_ip(request),
-            ),
-            timeout=30,
+        result = await request.app.state.users.register(
+            body.username, body.password, body.agency_code
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
     return {"user": _user_json(result.user)}
 
-
 @app.post("/auth/login")
 async def login(body: LoginBody, request: Request):
-    stub = users_pb2_grpc.UsersServiceStub(_channel(request))
     try:
-        result = await stub.Login(
-            users_pb2.LoginRequest(
-                username=body.username,
-                password=body.password,
-                client_ip=_client_ip(request),
-            ),
-            timeout=30,
-        )
+        result = await request.app.state.users.login(body.username, body.password)
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
-    if result.HasField("user"):
-        return {"user": _start_session(request, result.user), "nextStep": None}
     request.session.clear()
     request.session["pending"] = {
         "mfa": result.mfa_token,
@@ -285,20 +259,13 @@ async def login(body: LoginBody, request: Request):
     }
     return {"user": None, "nextStep": result.next_step}
 
-
 @app.post("/auth/2fa/setup")
 async def two_factor_setup(request: Request):
     pending = _pending_login(request)
     if pending["step"] != "2fa_setup":
         raise HTTPException(status_code=409, detail="Two-factor sign-in is already set up")
-    stub = users_pb2_grpc.UsersServiceStub(_channel(request))
     try:
-        result = await stub.SetupTwoFactor(
-            users_pb2.TwoFactorSetupRequest(
-                mfa_token=pending["mfa"], client_ip=_client_ip(request)
-            ),
-            timeout=30,
-        )
+        result = await request.app.state.users.setup_two_factor(pending["mfa"])
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
     return {"qrCodeDataUrl": result.qr_code_data_url, "secret": result.secret}
@@ -307,21 +274,13 @@ async def two_factor_setup(request: Request):
 @app.post("/auth/2fa/verify")
 async def two_factor_verify(body: TwoFactorCodeBody, request: Request):
     pending = _pending_login(request)
-    stub = users_pb2_grpc.UsersServiceStub(_channel(request))
     try:
-        result = await stub.CompleteTwoFactor(
-            users_pb2.TwoFactorCodeRequest(
-                mfa_token=pending["mfa"],
-                code=body.code,
-                enroll=pending["step"] == "2fa_setup",
-                client_ip=_client_ip(request),
-            ),
-            timeout=30,
+        result = await request.app.state.users.complete_two_factor(
+            pending["mfa"], body.code, pending["step"] == "2fa_setup"
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
-    return {"user": _start_session(request, result.user)}
-
+    return {"user": _start_session(request, result.user, result.access_token)}
 
 @app.post("/auth/logout", status_code=204)
 async def logout(request: Request):

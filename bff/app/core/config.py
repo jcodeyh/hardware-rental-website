@@ -14,17 +14,15 @@ class Settings(BaseSettings):
     hardware_timeout: float = 15.0
     hardware_project_id_org_prefix: bool = True
 
-    users_api_base_url: str = ""
-    users_api_timeout: float = 15.0
+    users_grpc_target: str = ""
+    users_grpc_tls: bool = True
+    users_timeout: float = 15.0
 
     grpc_host: str = "127.0.0.1"
     grpc_port: int = 50051
 
     session_secret: str = ""
     session_cookie_secure: bool = False
-
-    users_db_path: str = "/tmp/bff-users.sqlite3"
-    local_seed_users: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

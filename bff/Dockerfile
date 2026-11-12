@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY proto/ ./proto/
 RUN python -m grpc_tools.protoc -I . --python_out=. --grpc_python_out=. \
-    proto/projects.proto proto/hardware.proto proto/users.proto proto/upstream/hardware.proto
+    proto/projects.proto proto/hardware.proto proto/users.proto proto/vendors.proto proto/upstream/hardware.proto
 COPY app/ ./app/
 RUN useradd --create-home appuser
 USER appuser

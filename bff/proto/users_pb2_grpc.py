@@ -26,7 +26,12 @@ if _version_not_supported:
 
 
 class UsersServiceStub:
-    """Missing associated documentation comment in .proto file."""
+    """Users service for backend callers. Every method mirrors an existing HTTP
+    route and applies the same rules. Tokens are passed as request fields
+    (never with a "Bearer " prefix):
+    mfa_token    - from Login; used only for the three two-factor steps
+    access_token - from EnableTwoFactor or VerifyTwoFactor; used for everything else
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -34,10 +39,15 @@ class UsersServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.SignUp = channel.unary_unary(
-                '/users.v1.UsersService/SignUp',
-                request_serializer=proto_dot_users__pb2.SignUpRequest.SerializeToString,
-                response_deserializer=proto_dot_users__pb2.UserResponse.FromString,
+        self.ValidateAccessToken = channel.unary_unary(
+                '/users.v1.UsersService/ValidateAccessToken',
+                request_serializer=proto_dot_users__pb2.ValidateAccessTokenRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.ValidateAccessTokenResponse.FromString,
+                _registered_method=True)
+        self.Register = channel.unary_unary(
+                '/users.v1.UsersService/Register',
+                request_serializer=proto_dot_users__pb2.RegisterRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.RegisterResponse.FromString,
                 _registered_method=True)
         self.Login = channel.unary_unary(
                 '/users.v1.UsersService/Login',
@@ -46,21 +56,59 @@ class UsersServiceStub:
                 _registered_method=True)
         self.SetupTwoFactor = channel.unary_unary(
                 '/users.v1.UsersService/SetupTwoFactor',
-                request_serializer=proto_dot_users__pb2.TwoFactorSetupRequest.SerializeToString,
-                response_deserializer=proto_dot_users__pb2.TwoFactorSetupResponse.FromString,
+                request_serializer=proto_dot_users__pb2.SetupTwoFactorRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.SetupTwoFactorResponse.FromString,
                 _registered_method=True)
-        self.CompleteTwoFactor = channel.unary_unary(
-                '/users.v1.UsersService/CompleteTwoFactor',
+        self.EnableTwoFactor = channel.unary_unary(
+                '/users.v1.UsersService/EnableTwoFactor',
                 request_serializer=proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
-                response_deserializer=proto_dot_users__pb2.UserResponse.FromString,
+                response_deserializer=proto_dot_users__pb2.AuthResponse.FromString,
+                _registered_method=True)
+        self.VerifyTwoFactor = channel.unary_unary(
+                '/users.v1.UsersService/VerifyTwoFactor',
+                request_serializer=proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.AuthResponse.FromString,
+                _registered_method=True)
+        self.GetProfile = channel.unary_unary(
+                '/users.v1.UsersService/GetProfile',
+                request_serializer=proto_dot_users__pb2.AccessTokenRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.ProfileResponse.FromString,
+                _registered_method=True)
+        self.ListWatchlist = channel.unary_unary(
+                '/users.v1.UsersService/ListWatchlist',
+                request_serializer=proto_dot_users__pb2.AccessTokenRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.ListWatchlistResponse.FromString,
+                _registered_method=True)
+        self.AddToWatchlist = channel.unary_unary(
+                '/users.v1.UsersService/AddToWatchlist',
+                request_serializer=proto_dot_users__pb2.WatchlistVendorRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.AddToWatchlistResponse.FromString,
+                _registered_method=True)
+        self.RemoveFromWatchlist = channel.unary_unary(
+                '/users.v1.UsersService/RemoveFromWatchlist',
+                request_serializer=proto_dot_users__pb2.WatchlistVendorRequest.SerializeToString,
+                response_deserializer=proto_dot_users__pb2.RemoveFromWatchlistResponse.FromString,
                 _registered_method=True)
 
 
 class UsersServiceServicer:
-    """Missing associated documentation comment in .proto file."""
+    """Users service for backend callers. Every method mirrors an existing HTTP
+    route and applies the same rules. Tokens are passed as request fields
+    (never with a "Bearer " prefix):
+    mfa_token    - from Login; used only for the three two-factor steps
+    access_token - from EnableTwoFactor or VerifyTwoFactor; used for everything else
+    """
 
-    def SignUp(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+    def ValidateAccessToken(self, request, context):
+        """Backend token check used by other services (unchanged).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Register(self, request, context):
+        """Account and login flow (same as /users/* over HTTP).
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -77,7 +125,38 @@ class UsersServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def CompleteTwoFactor(self, request, context):
+    def EnableTwoFactor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def VerifyTwoFactor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetProfile(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListWatchlist(self, request, context):
+        """Personal watchlist (same as /watchlist over HTTP).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AddToWatchlist(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RemoveFromWatchlist(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -86,10 +165,15 @@ class UsersServiceServicer:
 
 def add_UsersServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SignUp': grpc.unary_unary_rpc_method_handler(
-                    servicer.SignUp,
-                    request_deserializer=proto_dot_users__pb2.SignUpRequest.FromString,
-                    response_serializer=proto_dot_users__pb2.UserResponse.SerializeToString,
+            'ValidateAccessToken': grpc.unary_unary_rpc_method_handler(
+                    servicer.ValidateAccessToken,
+                    request_deserializer=proto_dot_users__pb2.ValidateAccessTokenRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.ValidateAccessTokenResponse.SerializeToString,
+            ),
+            'Register': grpc.unary_unary_rpc_method_handler(
+                    servicer.Register,
+                    request_deserializer=proto_dot_users__pb2.RegisterRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.RegisterResponse.SerializeToString,
             ),
             'Login': grpc.unary_unary_rpc_method_handler(
                     servicer.Login,
@@ -98,13 +182,38 @@ def add_UsersServiceServicer_to_server(servicer, server):
             ),
             'SetupTwoFactor': grpc.unary_unary_rpc_method_handler(
                     servicer.SetupTwoFactor,
-                    request_deserializer=proto_dot_users__pb2.TwoFactorSetupRequest.FromString,
-                    response_serializer=proto_dot_users__pb2.TwoFactorSetupResponse.SerializeToString,
+                    request_deserializer=proto_dot_users__pb2.SetupTwoFactorRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.SetupTwoFactorResponse.SerializeToString,
             ),
-            'CompleteTwoFactor': grpc.unary_unary_rpc_method_handler(
-                    servicer.CompleteTwoFactor,
+            'EnableTwoFactor': grpc.unary_unary_rpc_method_handler(
+                    servicer.EnableTwoFactor,
                     request_deserializer=proto_dot_users__pb2.TwoFactorCodeRequest.FromString,
-                    response_serializer=proto_dot_users__pb2.UserResponse.SerializeToString,
+                    response_serializer=proto_dot_users__pb2.AuthResponse.SerializeToString,
+            ),
+            'VerifyTwoFactor': grpc.unary_unary_rpc_method_handler(
+                    servicer.VerifyTwoFactor,
+                    request_deserializer=proto_dot_users__pb2.TwoFactorCodeRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.AuthResponse.SerializeToString,
+            ),
+            'GetProfile': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetProfile,
+                    request_deserializer=proto_dot_users__pb2.AccessTokenRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.ProfileResponse.SerializeToString,
+            ),
+            'ListWatchlist': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListWatchlist,
+                    request_deserializer=proto_dot_users__pb2.AccessTokenRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.ListWatchlistResponse.SerializeToString,
+            ),
+            'AddToWatchlist': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddToWatchlist,
+                    request_deserializer=proto_dot_users__pb2.WatchlistVendorRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.AddToWatchlistResponse.SerializeToString,
+            ),
+            'RemoveFromWatchlist': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveFromWatchlist,
+                    request_deserializer=proto_dot_users__pb2.WatchlistVendorRequest.FromString,
+                    response_serializer=proto_dot_users__pb2.RemoveFromWatchlistResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -115,10 +224,15 @@ def add_UsersServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class UsersService:
-    """Missing associated documentation comment in .proto file."""
+    """Users service for backend callers. Every method mirrors an existing HTTP
+    route and applies the same rules. Tokens are passed as request fields
+    (never with a "Bearer " prefix):
+    mfa_token    - from Login; used only for the three two-factor steps
+    access_token - from EnableTwoFactor or VerifyTwoFactor; used for everything else
+    """
 
     @staticmethod
-    def SignUp(request,
+    def ValidateAccessToken(request,
             target,
             options=(),
             channel_credentials=None,
@@ -131,9 +245,36 @@ class UsersService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/users.v1.UsersService/SignUp',
-            proto_dot_users__pb2.SignUpRequest.SerializeToString,
-            proto_dot_users__pb2.UserResponse.FromString,
+            '/users.v1.UsersService/ValidateAccessToken',
+            proto_dot_users__pb2.ValidateAccessTokenRequest.SerializeToString,
+            proto_dot_users__pb2.ValidateAccessTokenResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Register(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/Register',
+            proto_dot_users__pb2.RegisterRequest.SerializeToString,
+            proto_dot_users__pb2.RegisterResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -186,8 +327,8 @@ class UsersService:
             request,
             target,
             '/users.v1.UsersService/SetupTwoFactor',
-            proto_dot_users__pb2.TwoFactorSetupRequest.SerializeToString,
-            proto_dot_users__pb2.TwoFactorSetupResponse.FromString,
+            proto_dot_users__pb2.SetupTwoFactorRequest.SerializeToString,
+            proto_dot_users__pb2.SetupTwoFactorResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -199,7 +340,7 @@ class UsersService:
             _registered_method=True)
 
     @staticmethod
-    def CompleteTwoFactor(request,
+    def EnableTwoFactor(request,
             target,
             options=(),
             channel_credentials=None,
@@ -212,9 +353,144 @@ class UsersService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/users.v1.UsersService/CompleteTwoFactor',
+            '/users.v1.UsersService/EnableTwoFactor',
             proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
-            proto_dot_users__pb2.UserResponse.FromString,
+            proto_dot_users__pb2.AuthResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def VerifyTwoFactor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/VerifyTwoFactor',
+            proto_dot_users__pb2.TwoFactorCodeRequest.SerializeToString,
+            proto_dot_users__pb2.AuthResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetProfile(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/GetProfile',
+            proto_dot_users__pb2.AccessTokenRequest.SerializeToString,
+            proto_dot_users__pb2.ProfileResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListWatchlist(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/ListWatchlist',
+            proto_dot_users__pb2.AccessTokenRequest.SerializeToString,
+            proto_dot_users__pb2.ListWatchlistResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AddToWatchlist(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/AddToWatchlist',
+            proto_dot_users__pb2.WatchlistVendorRequest.SerializeToString,
+            proto_dot_users__pb2.AddToWatchlistResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RemoveFromWatchlist(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/users.v1.UsersService/RemoveFromWatchlist',
+            proto_dot_users__pb2.WatchlistVendorRequest.SerializeToString,
+            proto_dot_users__pb2.RemoveFromWatchlistResponse.FromString,
             options,
             channel_credentials,
             insecure,
