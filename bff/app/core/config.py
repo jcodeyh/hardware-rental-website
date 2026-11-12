@@ -24,9 +24,6 @@ class Settings(BaseSettings):
     session_secret: str = ""
     session_cookie_secure: bool = False
 
-    users_db_path: str = "/tmp/bff-users.sqlite3"
-    local_seed_users: str = ""
-
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",

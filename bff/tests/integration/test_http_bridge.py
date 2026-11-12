@@ -8,12 +8,10 @@ from app.http_api import app
 from app.modules.hardware.grpc_client import HardwareGrpcClient
 from app.modules.hardware.grpc_service import HardwareService
 from app.modules.projects.grpc_service import ProjectsService
-from app.modules.users.grpc_service import LocalUsers, UsersService
-from app.modules.users.rest_client import UsersRestClient
-from app.modules.users.store import LocalUserStore
+from app.modules.users.grpc_client import UsersGrpcClient
 from proto import hardware_pb2_grpc, projects_pb2_grpc, users_pb2_grpc
 from tests.fakes.hardware_upstream import CODE, TEAM, start_fake_hardware
-from tests.fakes.users_api import VALID_CODE, FakeUsersApi
+from tests.fakes.users_grpc import VALID_CODE, FakeUsersService
 
 
 class FakeProjects:
@@ -74,39 +72,46 @@ class FakeProjects:
         }
 
 
-async def _start_bff(tmp_path, users_backend):
+async def _start_bff():
     upstream, upstream_server, target = await start_fake_hardware()
     upstream.add_hardware("hw1", "Monitor", "Monitor", 10)
     upstream.add_hardware("hw2", "ThinkPad", "Laptop", 4)
     hardware_client = HardwareGrpcClient(target, TEAM, CODE, timeout=5, use_tls=False)
     server = grpc.aio.server()
+    users = FakeUsersService()
+    users_server = grpc.aio.server()
+    users_pb2_grpc.add_UsersServiceServicer_to_server(users, users_server)
+    users_port = users_server.add_insecure_port("127.0.0.1:0")
+    users_client = UsersGrpcClient(f"127.0.0.1:{users_port}", timeout=5, use_tls=False)
     channel = None
 
     async def close():
         if channel is not None:
             await channel.close()
         await server.stop(grace=0)
+        await users_server.stop(grace=0)
+        await users_client.close()
         await hardware_client.close()
         await upstream_server.stop(grace=0)
         app.state.grpc_channel = None
+        app.state.users = None
 
     try:
-        projects = await _wire(server, upstream, hardware_client, tmp_path, users_backend)
+        projects = await _wire(server, upstream, hardware_client)
+        await users_server.start()
+        app.state.users = users_client
         channel = app.state.grpc_channel
     except BaseException:
         await close()
         raise
-    return projects, upstream, close
+    return projects, upstream, users, close
 
 
-async def _wire(server, upstream, hardware_client, tmp_path, users_backend):
+async def _wire(server, upstream, hardware_client):
     await hardware_client.allocate("hw1", "AUS:P_OWN", 5, "seed", "seed-1")
     projects = FakeProjects()
     projects_pb2_grpc.add_ProjectsServiceServicer_to_server(ProjectsService(projects), server)
     hardware_pb2_grpc.add_HardwareServiceServicer_to_server(HardwareService(hardware_client), server)
-    if users_backend is None:
-        users_backend = LocalUsers(LocalUserStore(str(tmp_path / "users.sqlite3")))
-    users_pb2_grpc.add_UsersServiceServicer_to_server(UsersService(users_backend), server)
     port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
     app.state.grpc_channel = grpc.aio.insecure_channel(f"127.0.0.1:{port}")
@@ -114,8 +119,8 @@ async def _wire(server, upstream, hardware_client, tmp_path, users_backend):
 
 
 @pytest_asyncio.fixture
-async def bff(tmp_path):
-    projects, upstream, close = await _start_bff(tmp_path, None)
+async def bff():
+    projects, upstream, _, close = await _start_bff()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client, projects, upstream
@@ -123,17 +128,12 @@ async def bff(tmp_path):
 
 
 @pytest_asyncio.fixture
-async def team_bff(tmp_path):
-    users_api = FakeUsersApi()
-    users_client = UsersRestClient(
-        "https://users.example.test", transport=httpx.MockTransport(users_api.handler)
-    )
-    projects, upstream, close = await _start_bff(tmp_path, users_client)
+async def team_bff():
+    _, _, users, close = await _start_bff()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
-        yield client, users_api
+        yield client, users
     await close()
-    await users_client.close()
 
 
 async def _log_in(client, username="maria"):
@@ -144,9 +144,11 @@ async def _log_in(client, username="maria"):
     assert signup.status_code == 201
     login = await client.post("/auth/login", json={"username": username, "password": "correct-horse"})
     assert login.status_code == 200
-    assert login.json()["nextStep"] is None
-    assert login.json()["user"]["userId"] == f"u_{username}"
-
+    assert login.json()["nextStep"] == "2fa_setup"
+    assert (await client.post("/auth/2fa/setup")).status_code == 200
+    verified = await client.post("/auth/2fa/verify", json={"code": VALID_CODE})
+    assert verified.status_code == 200
+    assert verified.json()["user"]["userId"] == f"u_{username}"
 
 def _calls(upstream, name):
     return [request for call, request in upstream.state.calls if call == name]
@@ -200,15 +202,13 @@ async def test_logout_ends_session(bff):
 
 @pytest.mark.asyncio
 async def test_team_login_enrolls_then_verifies_two_factor(team_bff):
-    client, users_api = team_bff
+    client, users = team_bff
     signup = await client.post(
         "/auth/signup",
         json={"username": "maria", "password": "correct-horse", "agencyCode": "AUS"},
-        headers={"X-Forwarded-For": "203.0.113.9, 10.0.0.1"},
     )
     assert signup.status_code == 201
-    assert signup.json()["user"] == {"userId": "1", "username": "maria", "orgId": "AUS"}
-    assert users_api.requests[-1].headers["x-forwarded-for"] == "203.0.113.9"
+    assert signup.json()["user"] == {"userId": "u_maria", "username": "maria", "orgId": "AUS"}
 
     login = await client.post("/auth/login", json={"username": "maria", "password": "correct-horse"})
     assert login.json() == {"user": None, "nextStep": "2fa_setup"}
@@ -217,7 +217,7 @@ async def test_team_login_enrolls_then_verifies_two_factor(team_bff):
     setup = await client.post("/auth/2fa/setup")
     assert setup.status_code == 200
     assert setup.json()["qrCodeDataUrl"].startswith("data:image/png")
-    assert users_api.requests[-1].headers["authorization"] == "Bearer mfa.maria"
+    assert users.calls[-1] == "SetupTwoFactor"
 
     wrong = await client.post("/auth/2fa/verify", json={"code": "000000"})
     assert wrong.status_code == 401
@@ -225,8 +225,8 @@ async def test_team_login_enrolls_then_verifies_two_factor(team_bff):
 
     enabled = await client.post("/auth/2fa/verify", json={"code": VALID_CODE})
     assert enabled.status_code == 200
-    assert users_api.requests[-1].url.path == "/users/2fa/enable"
-    assert (await client.get("/auth/me")).json()["user"]["userId"] == "1"
+    assert users.calls[-1] == "EnableTwoFactor"
+    assert (await client.get("/auth/me")).json()["user"]["userId"] == "u_maria"
 
     await client.post("/auth/logout")
     again = await client.post("/auth/login", json={"username": "maria", "password": "correct-horse"})
@@ -234,8 +234,7 @@ async def test_team_login_enrolls_then_verifies_two_factor(team_bff):
     assert (await client.post("/auth/2fa/setup")).status_code == 409
     verified = await client.post("/auth/2fa/verify", json={"code": VALID_CODE})
     assert verified.status_code == 200
-    assert users_api.requests[-1].url.path == "/users/2fa/verify"
-
+    assert users.calls[-1] == "VerifyTwoFactor"
 
 @pytest.mark.asyncio
 async def test_team_login_errors(team_bff, monkeypatch):
@@ -244,7 +243,7 @@ async def test_team_login_errors(team_bff, monkeypatch):
     assert (await client.post("/auth/2fa/verify", json={"code": "12ab56"})).status_code == 422
     bad = await client.post("/auth/login", json={"username": "ghost", "password": "whatever"})
     assert bad.status_code == 401
-    assert bad.json()["error"] == "Invalid username or password."
+    assert bad.json()["error"] == "Invalid username or password"
     short = await client.post(
         "/auth/signup", json={"username": "maria", "password": "correct-horse", "agencyCode": "AUS"}
     )
@@ -509,17 +508,19 @@ async def test_budget_context_upstream_error_message(bff):
 
 
 @pytest.mark.asyncio
-async def test_wrong_hardware_team_code_is_not_a_user_login_error(tmp_path):
+async def test_wrong_hardware_team_code_is_not_a_user_login_error():
     upstream, upstream_server, target = await start_fake_hardware()
     client = HardwareGrpcClient(target, TEAM, "wrong-code", timeout=5, use_tls=False)
     server = grpc.aio.server()
     hardware_pb2_grpc.add_HardwareServiceServicer_to_server(HardwareService(client), server)
-    users_pb2_grpc.add_UsersServiceServicer_to_server(
-        UsersService(LocalUsers(LocalUserStore(str(tmp_path / "u.sqlite3")))), server
-    )
     port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
     app.state.grpc_channel = grpc.aio.insecure_channel(f"127.0.0.1:{port}")
+    users_server = grpc.aio.server()
+    users_pb2_grpc.add_UsersServiceServicer_to_server(FakeUsersService(), users_server)
+    users_port = users_server.add_insecure_port("127.0.0.1:0")
+    await users_server.start()
+    app.state.users = UsersGrpcClient(f"127.0.0.1:{users_port}", timeout=5, use_tls=False)
     try:
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://testserver") as http:
             await _log_in(http)
@@ -527,8 +528,11 @@ async def test_wrong_hardware_team_code_is_not_a_user_login_error(tmp_path):
             assert response.status_code == 502
             assert response.json()["error"] == "The Hardware service rejected our team credentials"
     finally:
+        await app.state.users.close()
+        app.state.users = None
         await app.state.grpc_channel.close()
         app.state.grpc_channel = None
         await server.stop(grace=0)
+        await users_server.stop(grace=0)
         await client.close()
         await upstream_server.stop(grace=0)
