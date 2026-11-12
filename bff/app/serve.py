@@ -6,6 +6,7 @@ import uvicorn
 
 from app.core.config import get_settings
 from app.grpc_server import start_grpc_runtime
+from app.modules.users.grpc_client import UsersGrpcClient
 from app.http_api import app
 
 
@@ -19,12 +20,21 @@ async def main():
     runtime = await start_grpc_runtime()
     channel = grpc.aio.insecure_channel(f"127.0.0.1:{settings.grpc_port}")
     app.state.grpc_channel = channel
+    if not settings.users_grpc_target:
+        raise ValueError("USERS_GRPC_TARGET is required")
+    users = UsersGrpcClient(
+        settings.users_grpc_target,
+        timeout=settings.users_timeout,
+        use_tls=settings.users_grpc_tls,
+    )
+    app.state.users = users
     try:
         server = uvicorn.Server(
             uvicorn.Config(app, host="0.0.0.0", port=8002, log_level="info")
         )
         await server.serve()
     finally:
+        await users.close()
         await channel.close()
         await runtime.close()
 

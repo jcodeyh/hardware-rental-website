@@ -9,10 +9,7 @@ from app.modules.hardware.grpc_client import HardwareGrpcClient
 from app.modules.hardware.grpc_service import HardwareService
 from app.modules.projects.grpc_service import ProjectsService
 from app.modules.projects.rest_client import ProjectsRestClient
-from app.modules.users.grpc_service import LocalUsers, UsersService
-from app.modules.users.rest_client import UsersRestClient
-from app.modules.users.store import LocalUserStore, parse_seed_users
-from proto import hardware_pb2_grpc, projects_pb2_grpc, users_pb2_grpc
+from proto import hardware_pb2_grpc, projects_pb2_grpc
 
 logger = logging.getLogger(__name__)
 
@@ -26,24 +23,6 @@ class GrpcRuntime:
         await self.server.stop(grace=5)
         for client in self.clients:
             await client.close()
-
-
-def _users_backend(settings, clients):
-    if settings.users_api_base_url:
-        client = UsersRestClient(
-            settings.users_api_base_url,
-            timeout=settings.users_api_timeout,
-        )
-        clients.append(client)
-        logger.info("UsersService: User team API (two-factor sign-in)")
-        return client
-
-    store = LocalUserStore(settings.users_db_path)
-    store.seed(parse_seed_users(settings.local_seed_users))
-    logger.warning(
-        "UsersService: local user store (USERS_API_BASE_URL is not set)"
-    )
-    return LocalUsers(store)
 
 
 async def start_grpc_runtime():
@@ -65,11 +44,6 @@ async def start_grpc_runtime():
 
         projects_pb2_grpc.add_ProjectsServiceServicer_to_server(
             ProjectsService(projects_client),
-            server,
-        )
-
-        users_pb2_grpc.add_UsersServiceServicer_to_server(
-            UsersService(_users_backend(settings, clients)),
             server,
         )
 
