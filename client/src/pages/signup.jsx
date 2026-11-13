@@ -119,11 +119,11 @@ export default function Signup() {
             <div className="col-lg-12 full-width">
               <div className="row">
                 <div className="col-lg-6">
-                  <button type="button" className='secondary' onClick={clearForm}>Clear</button>
+                  <button type="button" className='login-secondary' onClick={clearForm}>Clear</button>
                 </div>
 
                 <div className="col-lg-6">
-                  <button type="submit" className={disabled ? 'btn-disabled' : 'button'} disabled={disabled}>
+                  <button type="submit" className={disabled ? 'btn-disabled login-disabled' : 'login-button'} disabled={disabled}>
                     Sign Up
                   </button>
                 </div>
