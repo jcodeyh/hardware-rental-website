@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     users_grpc_tls: bool = True
     users_timeout: float = 15.0
 
+    vendors_grpc_target: str = ""
+    vendors_grpc_tls: bool = True
+    vendors_timeout: float = 15.0
+
     grpc_host: str = "127.0.0.1"
     grpc_port: int = 50051
 

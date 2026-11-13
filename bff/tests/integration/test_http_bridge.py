@@ -9,9 +9,11 @@ from app.modules.hardware.grpc_client import HardwareGrpcClient
 from app.modules.hardware.grpc_service import HardwareService
 from app.modules.projects.grpc_service import ProjectsService
 from app.modules.users.grpc_client import UsersGrpcClient
-from proto import hardware_pb2_grpc, projects_pb2_grpc, users_pb2_grpc
+from app.modules.vendors.grpc_client import VendorsGrpcClient
+from proto import hardware_pb2_grpc, projects_pb2_grpc, users_pb2_grpc, vendors_pb2_grpc
 from tests.fakes.hardware_upstream import CODE, TEAM, start_fake_hardware
 from tests.fakes.users_grpc import VALID_CODE, FakeUsersService
+from tests.fakes.vendors_grpc import FakeVendorsService
 
 
 class FakeProjects:
@@ -83,6 +85,11 @@ async def _start_bff():
     users_pb2_grpc.add_UsersServiceServicer_to_server(users, users_server)
     users_port = users_server.add_insecure_port("127.0.0.1:0")
     users_client = UsersGrpcClient(f"127.0.0.1:{users_port}", timeout=5, use_tls=False)
+    vendors = FakeVendorsService(users)
+    vendors_server = grpc.aio.server()
+    vendors_pb2_grpc.add_VendorDataServiceServicer_to_server(vendors, vendors_server)
+    vendors_port = vendors_server.add_insecure_port("127.0.0.1:0")
+    vendors_client = VendorsGrpcClient(f"127.0.0.1:{vendors_port}", timeout=5, use_tls=False)
     channel = None
 
     async def close():
@@ -91,20 +98,25 @@ async def _start_bff():
         await server.stop(grace=0)
         await users_server.stop(grace=0)
         await users_client.close()
+        await vendors_server.stop(grace=0)
+        await vendors_client.close()
         await hardware_client.close()
         await upstream_server.stop(grace=0)
         app.state.grpc_channel = None
         app.state.users = None
+        app.state.vendors = None
 
     try:
         projects = await _wire(server, upstream, hardware_client)
         await users_server.start()
+        await vendors_server.start()
         app.state.users = users_client
+        app.state.vendors = vendors_client
         channel = app.state.grpc_channel
     except BaseException:
         await close()
         raise
-    return projects, upstream, users, close
+    return projects, upstream, users, vendors, close
 
 
 async def _wire(server, upstream, hardware_client):
@@ -120,7 +132,7 @@ async def _wire(server, upstream, hardware_client):
 
 @pytest_asyncio.fixture
 async def bff():
-    projects, upstream, _, close = await _start_bff()
+    projects, upstream, _, _, close = await _start_bff()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client, projects, upstream
@@ -129,12 +141,19 @@ async def bff():
 
 @pytest_asyncio.fixture
 async def team_bff():
-    _, _, users, close = await _start_bff()
+    _, _, users, _, close = await _start_bff()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client, users
     await close()
 
+@pytest_asyncio.fixture
+async def vendors_bff():
+    _, _, users, vendors, close = await _start_bff()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client, users, vendors
+    await close()
 
 async def _log_in(client, username="maria"):
     signup = await client.post(
@@ -536,3 +555,41 @@ async def test_wrong_hardware_team_code_is_not_a_user_login_error():
         await users_server.stop(grace=0)
         await client.close()
         await upstream_server.stop(grace=0)
+
+@pytest.mark.asyncio
+async def test_vendors_require_login(vendors_bff):
+    client, _, _ = vendors_bff
+    assert (await client.get("/vendors")).status_code == 401
+    assert (await client.get("/vendors/AUS:v1:C:aaa/records")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_vendors_use_the_access_token_and_the_users_own_agency(vendors_bff):
+    client, _, vendors = vendors_bff
+    await _log_in(client)
+    listed = await client.get("/vendors", params={"query": "blue", "size": 5})
+    assert listed.status_code == 200
+    body = listed.json()
+    assert body["agencyCode"] == "AUS"
+    assert [v["vendorName"] for v in body["vendors"]] == ["BLUE LINE IT"]
+    assert body["totalCount"] == "1"
+    assert body["hasNext"] is False
+    assert vendors.tokens[-1] == "access.maria"
+    assert vendors.requests[-1].government == ""
+
+    records = await client.get("/vendors/AUS:v1:C:aaa/records")
+    assert records.status_code == 200
+    assert records.json()["records"][0]["amount"] == "1250.50"
+    assert (await client.get("/vendors/AUS:v1:C:zzz/records")).status_code == 404
+    assert (await client.get("/vendors", params={"size": 101})).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_expired_access_token_ends_the_session(vendors_bff):
+    client, _, vendors = vendors_bff
+    await _log_in(client)
+    vendors.expired = True
+    response = await client.get("/vendors")
+    assert response.status_code == 401
+    assert response.json()["error"] == "Your session expired. Log in again."
+    assert (await client.get("/auth/me")).status_code == 401
