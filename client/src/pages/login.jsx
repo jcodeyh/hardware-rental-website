@@ -145,11 +145,11 @@ export default function Login() {
             <div className="col-lg-12 full-width">
               <div className="row">
                 <div className="col-lg-6">
-                  <button type="button" className='secondary' onClick={clearForm}>Clear</button>
+                  <button type="button" className='login-secondary' onClick={clearForm}>Clear</button>
                 </div>
 
                 <div className="col-lg-6">
-                  <button type="submit" className={passwordDisabled ? 'btn-disabled' : 'button'} disabled={passwordDisabled}>Log in</button>
+                  <button type="submit" className={passwordDisabled ? 'btn-disabled login-disabled' : 'login-button'} disabled={passwordDisabled}>Log in</button>                
                 </div>
               </div>
             </div>

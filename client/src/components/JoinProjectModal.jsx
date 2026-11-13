@@ -90,7 +90,7 @@ const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemPro
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" id="modal-btn-submit" disabled={loading}>
-              {loading ? 'Joining...' : 'Join Project'}
+              {loading ? 'Joining...' : 'Join'}
             </button>
           </div>
         </form>
