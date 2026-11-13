@@ -6,7 +6,7 @@ import time
 from typing import Literal
 
 import grpc
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from google.protobuf import json_format
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 SERVICE_ID_PATTERN = r"^[A-Za-z0-9_.:@-]{1,64}$"
 REQUEST_ID_PATTERN = r"^[A-Za-z0-9_:-]{1,60}$"
+VENDOR_ID_PATTERN = r"^[A-Za-z0-9_.:@-]{1,200}$"
 SESSION_MAX_AGE_SECONDS = 8 * 60 * 60
 PENDING_LOGIN_SECONDS = 5 * 60
 
@@ -164,6 +165,20 @@ def _start_session(request: Request, user, access_token: str) -> dict:
     request.session["access_token"] = access_token
     return data
 
+def _access_token(request: Request) -> str:
+    token = request.session.get("access_token")
+    if not token:
+        # Session created before access tokens were stored: sign in again.
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Please log in again")
+    return token
+
+
+def _vendors_error(request: Request, error: grpc.aio.AioRpcError):
+    if error.code() == grpc.StatusCode.UNAUTHENTICATED:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Your session expired. Log in again.")
+    _grpc_error(error)
 
 def _pending_login(request: Request) -> dict:
     pending = request.session.get("pending")
@@ -564,6 +579,36 @@ async def check_in(
         _grpc_error(error)
     return {"success": True}
 
+@app.get("/vendors")
+async def list_vendors(
+    request: Request,
+    query: str = Query(default="", max_length=100),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    user: dict = Depends(_current_user),
+):
+    token = _access_token(request)
+    try:
+        result = await request.app.state.vendors.list_vendors(token, query, page, size)
+    except grpc.aio.AioRpcError as error:
+        _vendors_error(request, error)
+    return json_format.MessageToDict(result, always_print_fields_with_no_presence=True)
+
+
+@app.get("/vendors/{vendor_id}/records")
+async def vendor_records(
+    request: Request,
+    vendor_id: str = Path(pattern=VENDOR_ID_PATTERN),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    user: dict = Depends(_current_user),
+):
+    token = _access_token(request)
+    try:
+        result = await request.app.state.vendors.get_vendor_records(token, vendor_id, page, size)
+    except grpc.aio.AioRpcError as error:
+        _vendors_error(request, error)
+    return json_format.MessageToDict(result, always_print_fields_with_no_presence=True)
 
 @app.get("/dashboard/my-hardware")
 async def my_hardware(request: Request, user: dict = Depends(_current_user)):
