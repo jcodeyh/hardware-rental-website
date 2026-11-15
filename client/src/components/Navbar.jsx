@@ -2,12 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import authService from '../service/authService';
+import NotificationBell from './NotificationBell';
 
 const Navbar = ({ onJoinClick, onAddClick }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const rawUser = localStorage.getItem('username');
-  const username = (rawUser && rawUser !== 'undefined') ? rawUser : 'User';
+  const { user, logout } = useAuth();
+  const username = user?.username || 'User';
 
   const handleLogout = async () => {
     try {
@@ -15,7 +15,6 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('username');
       logout();
       navigate('/login');
     }
@@ -29,7 +28,10 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
           Welcome, <strong>{username}</strong>
         </span>
         <div className="navbar-actions">
-          <button className="btn btn-secondary" id="navbar-btn-join" onClick={onJoinClick}>
+          <button className="btn btn-outline" id="navbar-btn-dashboard" onClick={() => navigate('/dashboard')}>
+            Dashboard
+          </button>
+          <button className="btn btn-outline" id="navbar-btn-join" onClick={onJoinClick}>
             Join Project
           </button>
           <button className="btn btn-primary" id="navbar-btn-add" onClick={onAddClick}>
@@ -38,6 +40,9 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
           <button className="btn btn-danger" id="navbar-btn-logout" onClick={handleLogout}>
             Logout
           </button>
+           <div className="notification-bell">
+          <NotificationBell userId={user?.userId} />
+        </div>
         </div>
       </div>
     </nav>

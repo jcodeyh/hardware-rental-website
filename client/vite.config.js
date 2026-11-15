@@ -7,10 +7,20 @@ export default defineConfig({
   server: {
     port: 8080,
     proxy: {
+      '/api/app': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/app/, '')
+      },
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
       }
     }
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    clearMocks: true
   }
 })

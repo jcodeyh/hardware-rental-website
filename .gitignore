@@ -2,5 +2,11 @@
 */__pycache__/
 /mongodb
 *.env
+.env
+.env.*
+!.env.example
 *.py[cod]
 server.zip
+/hardware.proto
+/Projects Team API Contract v1.4 v2.docx
+/docs/

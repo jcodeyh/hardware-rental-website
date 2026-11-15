@@ -1,0 +1,97 @@
+
+syntax = "proto3";
+
+package projects.v1;
+
+import "google/protobuf/struct.proto";
+
+service ProjectsService {
+  rpc CreateProject(CreateProjectRequest) returns (OperationResponse);
+  rpc JoinProject(ProjectMembershipRequest) returns (OperationResponse);
+  rpc LeaveProject(ProjectMembershipRequest) returns (OperationResponse);
+  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc GetBudgetContext(BudgetContextRequest) returns (google.protobuf.Struct);
+  rpc GetUnitPrice(UnitPriceRequest) returns (google.protobuf.Struct);
+  rpc GetDepartmentSpend(DepartmentSpendRequest) returns (google.protobuf.Struct);
+}
+
+message HardwareItem {
+  string hardware_id = 1;
+  int32 allocation = 2;
+}
+
+message Project {
+  string project_id = 1;
+  string project_name = 2;
+  string project_desc = 3;
+  string creator_id = 4;
+  string org_id = 5;
+  int64 budget = 6;
+  repeated HardwareItem hardware_list = 7;
+  repeated string joined_users = 8;
+}
+
+message CreateProjectRequest {
+  string creator_id = 1;
+  string project_id = 2;
+  string project_name = 3;
+  optional string project_desc = 4;
+  string org_id = 5;
+  int64 budget = 6;
+  repeated HardwareItem hardware_list = 7;
+}
+
+message ProjectMembershipRequest {
+  string project_id = 1;
+  string org_id = 2;
+  string user_id = 3;
+}
+
+message SearchProjectsRequest {
+  optional string project_id = 1;
+  optional string org_id = 2;
+}
+
+message ProjectSummary {
+  string project_id = 1;
+  string project_name = 2;
+  string org_id = 3;
+}
+
+message SearchProjectsResponse {
+  repeated ProjectSummary project_list = 1;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+  string org_id = 2;
+}
+
+message GetProjectResponse {
+  Project project_info = 1;
+}
+
+message OperationResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message BudgetItem {
+  string description = 1;
+  int32 quantity = 2;
+}
+
+message BudgetContextRequest {
+  string org_id = 1;
+  double budget = 2;
+  repeated BudgetItem items = 3;
+}
+
+message UnitPriceRequest {
+  string category = 1;
+}
+
+message DepartmentSpendRequest {
+  string keyword = 1;
+}

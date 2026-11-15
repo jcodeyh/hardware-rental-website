@@ -1,20 +1,21 @@
 const URLs = {
-  // Auth
-  "login"           : "/login",
-  "signUp"          : "/signup",
-  "logout"          : "/logout",
+  "login"           : "/auth/login",
+  "signUp"          : "/auth/signup",
+  "logout"          : "/auth/logout",
+  "me"              : "/auth/me",
+  "twoFactorSetup"  : "/auth/2fa/setup",
+  "twoFactorVerify" : "/auth/2fa/verify",
 
-  // Projects
-  "getProjectInfo"  : "/get_project_info",
-  "createProject"   : "/create_project",
-  "joinProject"     : "/join_project",
-  "getUserProjects" : "/get_user_projects_list",
+  "projects"        : "/projects",
+  "joinProject"     : "/projects/join",
+  "getUserProjects" : "/projects/mine",
 
-  // Hardware
-  "getAllHwNames"    : "/get_all_hw_names",
-  "checkOut"        : "/check_out",
-  "checkIn"         : "/check_in",
-  "getInventory"    : "/api/inventory",
+  "hardware"        : "/hardware",
+  "checkOut"        : "/hardware/check-out",
+  "checkIn"         : "/hardware/check-in",
+
+  "myHardware"      : "/dashboard/my-hardware",
+  "budgetContext"   : "/budget-context",
 };
 
-export default URLs;
+export default URLs;

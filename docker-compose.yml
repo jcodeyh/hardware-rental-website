@@ -11,7 +11,7 @@ services:
   client:
     build: ./client
     ports:
-      - "8080:8080"
+      - "8080:3000"   # browse localhost:8080; nginx inside listens on 3000
     volumes:
       - ./client:/app
       - /app/node_modules
