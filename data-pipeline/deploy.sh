@@ -5,7 +5,7 @@
 #   ./deploy.sh adf      deploys Data Factory + pipeline + trigger (trigger stays stopped)
 #   ./deploy.sh grant    lets the factory's managed identity read/write the gov schema
 #   ./deploy.sh run      starts a pipeline run (FULL=true for a full reload)
-#   ./deploy.sh start    turns on the daily 09:00 Central trigger
+#   ./deploy.sh start    turns on the weekly Monday 09:00 Central trigger
 set -euo pipefail
 cd "$(dirname "$0")"
 export PATH=~/bin:$PATH
@@ -88,7 +88,7 @@ case "${1:-check}" in
     done
     ;;
   start)
-    az datafactory trigger start -g "$RG" --factory-name "$ADF_NAME" -n TR_Daily0900Central
+    az datafactory trigger start -g "$RG" --factory-name "$ADF_NAME" -n TR_WeeklyMon0900Central
     ;;
   *) echo "unknown step"; exit 1 ;;
 esac

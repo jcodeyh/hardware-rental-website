@@ -1,7 +1,7 @@
 # Government procurement data pipeline (Azure Data Factory → Azure SQL)
 
 Pulls Austin, Dallas and Texas procurement data from their live Socrata APIs into the
-`hardwarerental` Azure SQL database (schema `gov`) and refreshes it daily.
+`hardwarerental` Azure SQL database (schema `gov`) and refreshes it weekly (Mondays 09:00 Central, after Austin's Monday publish).
 
 | Path | What |
 |---|---|
@@ -13,7 +13,7 @@ Pulls Austin, Dallas and Texas procurement data from their live Socrata APIs int
 | `deploy.sh` | Cloud Shell steps: `check`, `sql`, `adf`, `grant`, `run`, `status`, `steps`, `test`, `reset`, `cancel`, `start` |
 
 ## Pipelines
-`PL_RefreshGovData` (daily trigger) runs `PL_LoadSource` once per source, 3 in parallel. `PL_LoadSource`:
+`PL_RefreshGovData` (weekly trigger, Mondays 09:00 Central) runs `PL_LoadSource` once per source, 3 in parallel. `PL_LoadSource`:
 1. **Lookup** `gov.source_state` → last `:updated_at` watermark.
 2. **Lookup** (REST) `$select=max(:updated_at),count(*)&$where=:updated_at>'<watermark>'` → rows changed.
 3. **Until** offset ≥ count: **Copy** one page (`$order=:id&$limit=50000&$offset=<n>`) → `gov.stg_<source>`
@@ -33,5 +33,5 @@ cd hardware-rental-website/data-pipeline
 FULL=true ./deploy.sh run  # first full load
 ./deploy.sh status
 ./deploy.sh test
-./deploy.sh start          # daily 09:00 Central
+./deploy.sh start          # weekly, Mondays 09:00 Central
 ```
