@@ -40,20 +40,116 @@ function rangeText(from, to) {
   return "Showing all dates";
 }
 
-function CategoryBars({ rows }) {
-  const max = Math.max(...rows.map((r) => r.purchases), 1);
+const compactUsd = (v) =>
+  typeof v === "number"
+    ? v.toLocaleString("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 })
+    : "—";
+
+// Horizontal bar chart, one series. Hover a row for the exact numbers.
+function BarChart({ rows, label, value, format, tooltip }) {
+  const [hover, setHover] = useState(null);
+  const max = Math.max(...rows.map((r) => value(r) || 0), 1);
   return (
     <ol className="dash-bars">
-      {rows.map((r) => (
-        <li key={r.category}>
-          <span className="dash-bar-label" title={r.category}>{r.category}</span>
+      {rows.map((r, i) => (
+        <li
+          key={`${label(r)}-${i}`}
+          className={hover === i ? "dash-row-hover" : ""}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
+        >
+          <span className="dash-bar-label" title={label(r)}>{label(r)}</span>
           <span className="dash-bar-track">
-            <span className="dash-bar" style={{ width: `${(100 * r.purchases) / max}%` }} />
+            <span className="dash-bar" style={{ width: `${Math.max((100 * (value(r) || 0)) / max, 1)}%` }} />
+            {hover === i && <span className="dash-tooltip">{tooltip(r)}</span>}
           </span>
-          <span className="dash-bar-value">{r.purchases.toLocaleString()}</span>
+          <span className="dash-bar-value">{format(value(r))}</span>
         </li>
       ))}
     </ol>
+  );
+}
+
+// Low–high band (25th–75th percentile) with a dot at the median, on a shared $ axis.
+function PriceRangeChart({ rows, priceLabel }) {
+  const [hover, setHover] = useState(null);
+  const priced = rows.filter((r) => typeof r.median === "number");
+  const max = Math.max(...priced.map((r) => (typeof r.high === "number" ? r.high : r.median)), 1);
+  const pos = (v) => `${(100 * v) / max}%`;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * max);
+
+  return (
+    <div className="dash-range-chart">
+      <ol className="dash-bars">
+        {rows.map((r, i) => {
+          const ok = typeof r.median === "number";
+          const low = typeof r.low === "number" ? r.low : r.median;
+          const high = typeof r.high === "number" ? r.high : r.median;
+          return (
+            <li
+              key={`${r.category}-${i}`}
+              className={hover === i ? "dash-row-hover" : ""}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+            >
+              <span className="dash-bar-label" title={r.category}>{r.category}</span>
+              <span className="dash-range-track">
+                {ok ? (
+                  <>
+                    <span className="dash-range-band" style={{ left: pos(low), width: `calc(${pos(high)} - ${pos(low)})` }} />
+                    <span className="dash-range-median" style={{ left: pos(r.median) }} />
+                    {hover === i && (
+                      <span className="dash-tooltip">
+                        <strong>{r.category}</strong>
+                        <br />
+                        Low {usd(r.low)} · Typical {usd(r.median)} · High {usd(r.high)}
+                        <br />
+                        {r.purchases} purchases
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="dash-range-na">Not available (fewer than 3 purchases)</span>
+                )}
+              </span>
+              <span className="dash-bar-value">{ok ? compactUsd(r.median) : "—"}</span>
+            </li>
+          );
+        })}
+        <li className="dash-axis-row" aria-hidden="true">
+          <span />
+          <span className="dash-axis">
+            {ticks.map((t, i) => (
+              <span key={i} className="dash-axis-tick" style={{ left: pos(t) }}>{compactUsd(t)}</span>
+            ))}
+          </span>
+          <span />
+        </li>
+      </ol>
+      <div className="dash-legend">
+        <span><span className="dash-legend-band" /> Typical range (25th–75th percentile)</span>
+        <span><span className="dash-legend-dot" /> Typical {priceLabel} (median)</span>
+      </div>
+    </div>
+  );
+}
+
+// Card with a chart / table toggle so exact values are always reachable.
+function ChartCard({ title, subtitle, wide, table, children }) {
+  const [showTable, setShowTable] = useState(false);
+  return (
+    <section className={wide ? "dash-card dash-wide" : "dash-card"}>
+      <div className="dash-card-header">
+        <div>
+          <h2>{title}</h2>
+          {subtitle && <p className="dash-card-subtitle">{subtitle}</p>}
+        </div>
+        <button type="button" className="btn btn-outline dash-toggle" onClick={() => setShowTable((s) => !s)}>
+          {showTable ? "Show chart" : "Show table"}
+        </button>
+      </div>
+      {showTable ? table : children}
+    </section>
   );
 }
 
@@ -222,7 +318,7 @@ export function BudgetContextPanel({ wide, onUnauthorized }) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [governments, setGovernments] = useState([]);
@@ -350,18 +446,42 @@ export default function Dashboard() {
     if (!next.length) setMode("all");
   };
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      logout();
+      navigate("/login");
+    }
+  };
+
   const bounds = governments.find((g) => g.government === selected);
   const empty = summary && (summary.topCategories || []).length === 0;
   const showSummary = !loading && summary && !empty;
   const priceLabel = summary?.priceBasis === "payment" ? "payment" : "unit price";
 
   return (
-    <div className="dash">
-      <header className="dash-header">
-        <h1>Government purchases</h1>
-        <Link to="/landingPage">← Projects</Link>
-      </header>
+    <div className="app-container dash" id="dashboard-page-container">
+      <nav className="navbar" id="dashboard-navbar">
+        <div className="dash-nav-left">
+          <Link className="btn btn-secondary" to="/landingPage">← Projects</Link>
+          <span className="navbar-brand">HaaS Portal</span>
+        </div>
+        <div className="navbar-right">
+          <span className="navbar-username">
+            Welcome, <strong>{user?.username || "User"}</strong>
+          </span>
+          <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+        </div>
+      </nav>
 
+      <main className="main-content">
+      <h1 className="page-title">Government purchases</h1>
+      <p className="page-subtitle">See what governments buy, what they typically pay, and who they buy from.</p>
+
+      <div className="dash-toolbar">
       <form className="dash-filters" onSubmit={applyDates}>
         <label className="dash-select">
           Government{" "}
@@ -417,47 +537,105 @@ export default function Dashboard() {
           </ul>
         )}
       </div>
+      </div>
 
       {!loading && summary && <p className="dash-range">{rangeText(summary.from, summary.to)}</p>}
       {error && <p className="dash-error">{error}</p>}
-      {loading && <p>Loading {selected}… (the database may take up to a minute to wake up)</p>}
+      {loading && (
+        <div className="dash-message">
+          <div className="dash-spinner" />
+          <p>Loading {selected}… (the database may take up to a minute to wake up)</p>
+        </div>
+      )}
       {!loading && empty && <p className="dash-empty">{summary.message || `No purchase data for ${selected}.`}</p>}
 
       <div className="dash-grid">
         {showSummary && (
           <>
-            <section className="dash-card dash-wide">
-              <h2>Top categories by number of purchases</h2>
-              <CategoryBars rows={summary.topCategories} />
-            </section>
+            <ChartCard
+              title="Top categories by number of purchases"
+              subtitle="How often each kind of item was bought"
+              table={
+                <table className="table table-sm dash-table">
+                  <thead><tr><th>Category</th><th className="num">Purchases</th></tr></thead>
+                  <tbody>
+                    {summary.topCategories.map((c) => (
+                      <tr key={c.category}><td>{c.category}</td><td className="num">{c.purchases.toLocaleString()}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              }
+            >
+              <BarChart
+                rows={summary.topCategories}
+                label={(c) => c.category}
+                value={(c) => c.purchases}
+                format={(v) => v.toLocaleString()}
+                tooltip={(c) => (
+                  <>
+                    <strong>{c.category}</strong>
+                    <br />
+                    {c.purchases.toLocaleString()} purchases
+                    {typeof c.totalAmount === "number" && <> · {usd(c.totalAmount)}</>}
+                  </>
+                )}
+              />
+            </ChartCard>
 
-            <section className="dash-card dash-wide">
-              <h2>Typical {priceLabel}</h2>
-              <table className="table table-sm">
-                <thead><tr><th>Category</th><th>Low (25th)</th><th>Typical (median)</th><th>High (75th)</th><th>Purchases</th></tr></thead>
-                <tbody>
-                  {(summary.typicalPrices || []).map((p) => (
-                    <tr key={p.category}>
-                      <td>{p.category}</td><td>{usd(p.low)}</td><td>{usd(p.median)}</td><td>{usd(p.high)}</td><td>{p.purchases}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+            <ChartCard
+              title="Top vendors"
+              subtitle="Total amount spent with each vendor"
+              table={
+                <table className="table table-sm dash-table">
+                  <thead><tr><th>Vendor</th><th className="num">Purchases</th><th className="num">Total</th></tr></thead>
+                  <tbody>
+                    {(summary.topVendors || []).map((v) => (
+                      <tr key={v.vendor}><td>{v.vendor}</td><td className="num">{v.purchases.toLocaleString()}</td><td className="num">{usd(v.totalAmount)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              }
+            >
+              <BarChart
+                rows={summary.topVendors || []}
+                label={(v) => v.vendor}
+                value={(v) => v.totalAmount}
+                format={compactUsd}
+                tooltip={(v) => (
+                  <>
+                    <strong>{v.vendor}</strong>
+                    <br />
+                    {usd(v.totalAmount)} · {v.purchases.toLocaleString()} purchases
+                  </>
+                )}
+              />
+            </ChartCard>
 
-            <section className="dash-card">
-              <h2>Top vendors</h2>
-              <ol>
-                {(summary.topVendors || []).map((v) => (
-                  <li key={v.vendor}>{v.vendor} <small>({v.purchases.toLocaleString()} purchases, {usd(v.totalAmount)})</small></li>
-                ))}
-              </ol>
-            </section>
+            <ChartCard
+              wide
+              title={`Typical ${priceLabel}`}
+              subtitle={`Range of ${priceLabel}s per category. Hover a row for exact values.`}
+              table={
+                <table className="table table-sm dash-table">
+                  <thead><tr><th>Category</th><th className="num">Low (25th)</th><th className="num">Typical (median)</th><th className="num">High (75th)</th><th className="num">Purchases</th></tr></thead>
+                  <tbody>
+                    {(summary.typicalPrices || []).map((p) => (
+                      <tr key={p.category}>
+                        <td>{p.category}</td><td className="num">{usd(p.low)}</td><td className="num">{usd(p.median)}</td><td className="num">{usd(p.high)}</td><td className="num">{p.purchases}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              }
+            >
+              <PriceRangeChart rows={summary.typicalPrices || []} priceLabel={priceLabel} />
+            </ChartCard>
           </>
         )}
 
-        <BudgetContextPanel wide={!showSummary} onUnauthorized={toLogin} />
+        <BudgetContextPanel wide onUnauthorized={toLogin} />
       </div>
+      </main>
     </div>
   );
 }
