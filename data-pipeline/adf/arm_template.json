@@ -1,0 +1,1072 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "haas-govdata-westus"
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "defaultValue": "govdata"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DataFactory/factories",
+      "apiVersion": "2018-06-01",
+      "name": "[parameters('factoryName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/linkedservices",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/LS_Socrata')]",
+      "properties": {
+        "type": "RestService",
+        "parameters": {
+          "baseUrl": {
+            "type": "String"
+          }
+        },
+        "typeProperties": {
+          "url": "@{linkedService().baseUrl}",
+          "authenticationType": "Anonymous",
+          "enableServerCertificateValidation": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/linkedservices",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/LS_AzureSql')]",
+      "properties": {
+        "type": "AzureSqlDatabase",
+        "typeProperties": {
+          "connectionString": "[concat('Data Source=tcp:', parameters('sqlServerName'), '.database.windows.net,1433;Initial Catalog=', parameters('sqlDatabaseName'), ';Encrypt=True;Connection Timeout=60')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/datasets",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/DS_SocrataJson')]",
+      "properties": {
+        "type": "RestResource",
+        "linkedServiceName": {
+          "referenceName": "LS_Socrata",
+          "type": "LinkedServiceReference",
+          "parameters": {
+            "baseUrl": "@dataset().baseUrl"
+          }
+        },
+        "parameters": {
+          "baseUrl": {
+            "type": "String"
+          },
+          "relativeUrl": {
+            "type": "String"
+          }
+        },
+        "typeProperties": {
+          "relativeUrl": {
+            "value": "@dataset().relativeUrl",
+            "type": "Expression"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]",
+        "[resourceId('Microsoft.DataFactory/factories/linkedservices', parameters('factoryName'), 'LS_Socrata')]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/datasets",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/DS_SqlTable')]",
+      "properties": {
+        "type": "AzureSqlTable",
+        "linkedServiceName": {
+          "referenceName": "LS_AzureSql",
+          "type": "LinkedServiceReference"
+        },
+        "parameters": {
+          "schemaName": {
+            "type": "String",
+            "defaultValue": "gov"
+          },
+          "tableName": {
+            "type": "String"
+          }
+        },
+        "typeProperties": {
+          "schema": {
+            "value": "@dataset().schemaName",
+            "type": "Expression"
+          },
+          "table": {
+            "value": "@dataset().tableName",
+            "type": "Expression"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]",
+        "[resourceId('Microsoft.DataFactory/factories/linkedservices', parameters('factoryName'), 'LS_AzureSql')]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/PL_LoadSource')]",
+      "properties": {
+        "description": "Load one Socrata source: count rows changed since the watermark, copy them page by page ($offset loop, 50k rows) into gov.stg_<source>, then MERGE into gov.raw_<source>.",
+        "parameters": {
+          "source": {
+            "type": "Object"
+          },
+          "fullReload": {
+            "type": "Bool",
+            "defaultValue": false
+          }
+        },
+        "variables": {
+          "offset": {
+            "type": "String",
+            "defaultValue": "0"
+          },
+          "nextOffset": {
+            "type": "String",
+            "defaultValue": "0"
+          },
+          "doLoad": {
+            "type": "Boolean",
+            "defaultValue": false
+          }
+        },
+        "activities": [
+          {
+            "name": "Get load state",
+            "type": "Lookup",
+            "policy": {
+              "timeout": "0.00:10:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 60
+            },
+            "typeProperties": {
+              "firstRowOnly": true,
+              "dataset": {
+                "referenceName": "DS_SqlTable",
+                "type": "DatasetReference",
+                "parameters": {
+                  "schemaName": "gov",
+                  "tableName": "source_state"
+                }
+              },
+              "source": {
+                "type": "AzureSqlSource",
+                "queryTimeout": "00:05:00",
+                "sqlReaderQuery": {
+                  "value": "@concat('SELECT COALESCE(CONVERT(varchar(23), watermark, 126), ''1900-01-01T00:00:00'') AS watermark FROM gov.source_state WHERE source = ''', pipeline().parameters.source.name, '''')",
+                  "type": "Expression"
+                }
+              }
+            }
+          },
+          {
+            "name": "Get source delta",
+            "type": "Lookup",
+            "policy": {
+              "timeout": "0.00:05:00",
+              "retry": 2,
+              "retryIntervalInSeconds": 60
+            },
+            "dependsOn": [
+              {
+                "activity": "Get load state",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "typeProperties": {
+              "firstRowOnly": true,
+              "dataset": {
+                "referenceName": "DS_SocrataJson",
+                "type": "DatasetReference",
+                "parameters": {
+                  "baseUrl": "@pipeline().parameters.source.baseUrl",
+                  "relativeUrl": {
+                    "value": "@concat('resource/', pipeline().parameters.source.datasetId, '.json?$select=max(:updated_at),count(*)&$where=', concat(':updated_at>''', if(pipeline().parameters.fullReload, '1900-01-01T00:00:00', activity('Get load state').output.firstRow.watermark), ''''))",
+                    "type": "Expression"
+                  }
+                }
+              },
+              "source": {
+                "type": "RestSource",
+                "requestMethod": "GET",
+                "httpRequestTimeout": "00:02:00"
+              }
+            }
+          },
+          {
+            "name": "Set doLoad",
+            "type": "SetVariable",
+            "dependsOn": [
+              {
+                "activity": "Get source delta",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "typeProperties": {
+              "variableName": "doLoad",
+              "value": {
+                "value": "@greater(int(activity('Get source delta').output.firstRow.count), 0)",
+                "type": "Expression"
+              }
+            }
+          },
+          {
+            "name": "Copy pages",
+            "type": "Until",
+            "dependsOn": [
+              {
+                "activity": "Set doLoad",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "typeProperties": {
+              "expression": {
+                "value": "@or(not(variables('doLoad')), greaterOrEquals(int(variables('offset')), int(activity('Get source delta').output.firstRow.count)))",
+                "type": "Expression"
+              },
+              "timeout": "0.03:00:00",
+              "activities": [
+                {
+                  "name": "If loading",
+                  "type": "IfCondition",
+                  "typeProperties": {
+                    "expression": {
+                      "value": "@variables('doLoad')",
+                      "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                      {
+                        "name": "Copy page to staging",
+                        "type": "Copy",
+                        "policy": {
+                          "timeout": "0.00:30:00",
+                          "retry": 2,
+                          "retryIntervalInSeconds": 60
+                        },
+                        "inputs": [
+                          {
+                            "referenceName": "DS_SocrataJson",
+                            "type": "DatasetReference",
+                            "parameters": {
+                              "baseUrl": "@pipeline().parameters.source.baseUrl",
+                              "relativeUrl": {
+                                "value": "@concat('resource/', pipeline().parameters.source.datasetId, '.json?$select=:*,*&$order=:id&$limit=50000&$offset=', variables('offset'), '&$where=', concat(':updated_at>''', if(pipeline().parameters.fullReload, '1900-01-01T00:00:00', activity('Get load state').output.firstRow.watermark), ''''))",
+                                "type": "Expression"
+                              }
+                            }
+                          }
+                        ],
+                        "outputs": [
+                          {
+                            "referenceName": "DS_SqlTable",
+                            "type": "DatasetReference",
+                            "parameters": {
+                              "schemaName": "gov",
+                              "tableName": {
+                                "value": "@concat('stg_', pipeline().parameters.source.name)",
+                                "type": "Expression"
+                              }
+                            }
+                          }
+                        ],
+                        "typeProperties": {
+                          "source": {
+                            "type": "RestSource",
+                            "requestMethod": "GET",
+                            "httpRequestTimeout": "00:05:00"
+                          },
+                          "sink": {
+                            "type": "AzureSqlSink",
+                            "writeBatchSize": 10000,
+                            "disableMetricsCollection": true,
+                            "preCopyScript": {
+                              "value": "@if(equals(variables('offset'), '0'), concat('TRUNCATE TABLE gov.stg_', pipeline().parameters.source.name), 'SELECT 1')",
+                              "type": "Expression"
+                            }
+                          },
+                          "enableStaging": false,
+                          "dataIntegrationUnits": 2,
+                          "translator": {
+                            "value": "@pipeline().parameters.source.mapping",
+                            "type": "Expression"
+                          }
+                        }
+                      },
+                      {
+                        "name": "Next offset",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                          {
+                            "activity": "Copy page to staging",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ],
+                        "typeProperties": {
+                          "variableName": "nextOffset",
+                          "value": {
+                            "value": "@string(add(int(variables('offset')), 50000))",
+                            "type": "Expression"
+                          }
+                        }
+                      },
+                      {
+                        "name": "Advance offset",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                          {
+                            "activity": "Next offset",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ],
+                        "typeProperties": {
+                          "variableName": "offset",
+                          "value": {
+                            "value": "@variables('nextOffset')",
+                            "type": "Expression"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "If rows loaded",
+            "type": "IfCondition",
+            "dependsOn": [
+              {
+                "activity": "Copy pages",
+                "dependencyConditions": [
+                  "Succeeded"
+                ]
+              }
+            ],
+            "typeProperties": {
+              "expression": {
+                "value": "@variables('doLoad')",
+                "type": "Expression"
+              },
+              "ifTrueActivities": [
+                {
+                  "name": "Merge into history",
+                  "type": "SqlServerStoredProcedure",
+                  "policy": {
+                    "timeout": "0.01:00:00",
+                    "retry": 1,
+                    "retryIntervalInSeconds": 60
+                  },
+                  "linkedServiceName": {
+                    "referenceName": "LS_AzureSql",
+                    "type": "LinkedServiceReference"
+                  },
+                  "typeProperties": {
+                    "storedProcedureName": {
+                      "value": "@concat('gov.usp_merge_', pipeline().parameters.source.name)",
+                      "type": "Expression"
+                    },
+                    "storedProcedureParameters": {
+                      "published_epoch": {
+                        "value": {
+                          "value": "@div(sub(ticks(activity('Get source delta').output.firstRow.max_updated_at), ticks('1970-01-01T00:00:00Z')), 10000000)",
+                          "type": "Expression"
+                        },
+                        "type": "Int64"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "annotations": [
+          "mis281n",
+          "procurement"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]",
+        "[resourceId('Microsoft.DataFactory/factories/datasets', parameters('factoryName'), 'DS_SocrataJson')]",
+        "[resourceId('Microsoft.DataFactory/factories/datasets', parameters('factoryName'), 'DS_SqlTable')]",
+        "[resourceId('Microsoft.DataFactory/factories/linkedservices', parameters('factoryName'), 'LS_AzureSql')]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/pipelines",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/PL_RefreshGovData')]",
+      "properties": {
+        "description": "Daily refresh of Austin, Dallas and Texas procurement data into Azure SQL (gov schema). Runs PL_LoadSource for each source in parallel.",
+        "parameters": {
+          "sources": {
+            "type": "Array",
+            "defaultValue": [
+              {
+                "name": "austin",
+                "government": "Austin",
+                "baseUrl": "https://data.austintexas.gov",
+                "datasetId": "3ebq-e9iz",
+                "mapping": {
+                  "type": "TabularTranslator",
+                  "mappings": [
+                    {
+                      "source": {
+                        "path": "$[':id']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_row_id",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$[':updated_at']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_updated_at",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['commodity']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "commodity",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['commodity_description']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "commodity_description",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['extended_description']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "extended_description",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['quantity']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "quantity",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['unit_of_measure']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "unit_of_measure",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['unit_price']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "unit_price",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['itm_tot_am']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "itm_tot_am",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['master_agreement']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "master_agreement",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['contract_name']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "contract_name",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['purchase_order']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "purchase_order",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['award_date']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "award_date",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['vendor_code']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "vendor_code",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['lgl_nm']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "lgl_nm",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['city']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "city",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['st']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "st",
+                        "type": "String"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "dallas",
+                "government": "Dallas",
+                "baseUrl": "https://www.dallasopendata.com",
+                "datasetId": "x5ih-idh7",
+                "mapping": {
+                  "type": "TabularTranslator",
+                  "mappings": [
+                    {
+                      "source": {
+                        "path": "$[':id']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_row_id",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$[':updated_at']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_updated_at",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['rundate']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "rundate",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['fy']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "fy",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['fm']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "fm",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['docid']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "docid",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['chksubtot']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "chksubtot",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['vcode']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "vcode",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['vendor']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "vendor",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['fundtype']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "fundtype",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['department']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "department",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['activity']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "activity",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['objectgroup']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "objectgroup",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['object']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "object",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['commoditydscr']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "commoditydscr",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['invoicedate']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "invoicedate",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['invoicenumber']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "invoicenumber",
+                        "type": "String"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "texas",
+                "government": "Texas",
+                "baseUrl": "https://data.texas.gov",
+                "datasetId": "8hps-ztn4",
+                "mapping": {
+                  "type": "TabularTranslator",
+                  "mappings": [
+                    {
+                      "source": {
+                        "path": "$[':id']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_row_id",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$[':updated_at']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "source_updated_at",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['customer']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "customer",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['vendor']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "vendor",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['business_line']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "business_line",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['resource_unit_group']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "resource_unit_group",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['resource_unit_sub_group']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "resource_unit_sub_group",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['resource_unit']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "resource_unit",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['vendor_resource_unit']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "vendor_resource_unit",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['start_time']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "start_time",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['unit_type']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "unit_type",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['current_month_charges']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "current_month_charges",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['dir_recovery_fee']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "dir_recovery_fee",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['total_charges']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "total_charges",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['units']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "units",
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "source": {
+                        "path": "$['chargeback_rate']",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "chargeback_rate",
+                        "type": "String"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "fullReload": {
+            "type": "Bool",
+            "defaultValue": false
+          }
+        },
+        "activities": [
+          {
+            "name": "For each government source",
+            "type": "ForEach",
+            "typeProperties": {
+              "isSequential": false,
+              "batchCount": 3,
+              "items": {
+                "value": "@pipeline().parameters.sources",
+                "type": "Expression"
+              },
+              "activities": [
+                {
+                  "name": "Load source",
+                  "type": "ExecutePipeline",
+                  "typeProperties": {
+                    "pipeline": {
+                      "referenceName": "PL_LoadSource",
+                      "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                      "source": "@item()",
+                      "fullReload": "@pipeline().parameters.fullReload"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "annotations": [
+          "mis281n",
+          "procurement"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]",
+        "[resourceId('Microsoft.DataFactory/factories/pipelines', parameters('factoryName'), 'PL_LoadSource')]"
+      ]
+    },
+    {
+      "type": "Microsoft.DataFactory/factories/triggers",
+      "apiVersion": "2018-06-01",
+      "name": "[concat(parameters('factoryName'), '/TR_Daily0600Central')]",
+      "properties": {
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-10-27T06:00:00",
+            "timeZone": "Central Standard Time",
+            "schedule": {
+              "hours": [
+                6
+              ],
+              "minutes": [
+                0
+              ]
+            }
+          }
+        },
+        "pipelines": [
+          {
+            "pipelineReference": {
+              "referenceName": "PL_RefreshGovData",
+              "type": "PipelineReference"
+            },
+            "parameters": {}
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DataFactory/factories', parameters('factoryName'))]",
+        "[resourceId('Microsoft.DataFactory/factories/pipelines', parameters('factoryName'), 'PL_RefreshGovData')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "principalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.DataFactory/factories', parameters('factoryName')), '2018-06-01', 'full').identity.principalId]"
+    }
+  }
+}
