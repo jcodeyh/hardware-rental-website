@@ -33,5 +33,5 @@ cd hardware-rental-website/data-pipeline
 FULL=true ./deploy.sh run  # first full load
 ./deploy.sh status
 ./deploy.sh test
-./deploy.sh start          # daily 06:00 Central
+./deploy.sh start          # daily 09:00 Central
 ```
