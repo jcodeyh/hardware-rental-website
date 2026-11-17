@@ -139,6 +139,27 @@ jobs:
             az containerapp update -n "$APP" -g "$RG" --container-name "$name" --image "$IMAGE_PREFIX/$name:${{ github.sha }}" -o none
           done
 
+      - name: Wait for the new revision to start
+        run: |
+          rev=$(az containerapp show -n "$APP" -g "$RG" --query properties.latestRevisionName -o tsv)
+          fqdn=$(az containerapp revision show -n "$APP" -g "$RG" --revision "$rev" --query properties.fqdn -o tsv)
+          echo "Revision: $rev"
+          for attempt in $(seq 1 20); do
+            curl -s -o /dev/null --max-time 30 "https://$fqdn/healthz" || true
+            state=$(az containerapp revision show -n "$APP" -g "$RG" --revision "$rev" --query properties.runningState -o tsv)
+            ready=$(az containerapp show -n "$APP" -g "$RG" --query properties.latestReadyRevisionName -o tsv)
+            echo "attempt $attempt: state=$state ready=$ready"
+            if [ "$ready" = "$rev" ]; then
+              echo "OK $rev is serving"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::Revision $rev did not become ready; the previous revision is still serving."
+          az containerapp replica list -n "$APP" -g "$RG" --revision "$rev" \
+            --query "[].properties.containers[].{container:name,ready:ready,state:runningState,detail:runningStateDetails}" -o table || true
+          exit 1
+
       - name: Smoke test through the gateway
         run: |
           GATEWAY=https://$(az containerapp show -n "$APP" -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
