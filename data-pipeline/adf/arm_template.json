@@ -439,7 +439,7 @@
       "apiVersion": "2018-06-01",
       "name": "[concat(parameters('factoryName'), '/PL_RefreshGovData')]",
       "properties": {
-        "description": "Daily refresh of Austin, Dallas and Texas procurement data into Azure SQL (gov schema). Runs PL_LoadSource for each source in parallel.",
+        "description": "Weekly refresh of Austin, Dallas and Texas procurement data into Azure SQL (gov schema). Runs PL_LoadSource for each source in parallel.",
         "parameters": {
           "sources": {
             "type": "Array",
@@ -1028,18 +1028,21 @@
     {
       "type": "Microsoft.DataFactory/factories/triggers",
       "apiVersion": "2018-06-01",
-      "name": "[concat(parameters('factoryName'), '/TR_Daily0600Central')]",
+      "name": "[concat(parameters('factoryName'), '/TR_WeeklyMon0900Central')]",
       "properties": {
         "type": "ScheduleTrigger",
         "typeProperties": {
           "recurrence": {
-            "frequency": "Day",
+            "frequency": "Week",
             "interval": 1,
-            "startTime": "2026-10-27T06:00:00",
+            "startTime": "2026-11-17T09:00:00",
             "timeZone": "Central Standard Time",
             "schedule": {
+              "weekDays": [
+                "Monday"
+              ],
               "hours": [
-                6
+                9
               ],
               "minutes": [
                 0

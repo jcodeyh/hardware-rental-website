@@ -123,7 +123,7 @@ pl_child = {
     "activities": child_acts, "annotations": ["mis281n", "procurement"]}
 
 pl_parent = {
-    "description": "Daily refresh of Austin, Dallas and Texas procurement data into Azure SQL (gov schema). "
+    "description": "Weekly refresh of Austin, Dallas and Texas procurement data into Azure SQL (gov schema). "
                    "Runs PL_LoadSource for each source in parallel.",
     "parameters": {"sources": {"type": "Array", "defaultValue": sources},
                    "fullReload": {"type": "Bool", "defaultValue": False}},
@@ -138,9 +138,9 @@ pl_parent = {
     "annotations": ["mis281n", "procurement"]}
 
 trigger = {"type": "ScheduleTrigger",
-           "typeProperties": {"recurrence": {"frequency": "Day", "interval": 1,
-                                             "startTime": "2026-10-27T06:00:00", "timeZone": "Central Standard Time",
-                                             "schedule": {"hours": [6], "minutes": [0]}}},
+           "typeProperties": {"recurrence": {"frequency": "Week", "interval": 1,
+                                             "startTime": "2026-11-17T09:00:00", "timeZone": "Central Standard Time",
+                                             "schedule": {"weekDays": ["Monday"], "hours": [9], "minutes": [0]}}},
            "pipelines": [{"pipelineReference": {"referenceName": "PL_RefreshGovData", "type": "PipelineReference"},
                           "parameters": {}}]}
 
@@ -162,7 +162,7 @@ template = {
         res("pipelines", "PL_LoadSource", pl_child, [("datasets", "DS_SocrataJson"), ("datasets", "DS_SqlTable"),
                                                      ("linkedservices", "LS_AzureSql")]),
         res("pipelines", "PL_RefreshGovData", pl_parent, [("pipelines", "PL_LoadSource")]),
-        res("triggers", "TR_Daily0600Central", trigger, [("pipelines", "PL_RefreshGovData")]),
+        res("triggers", "TR_WeeklyMon0900Central", trigger, [("pipelines", "PL_RefreshGovData")]),
     ],
     "outputs": {"principalId": {"type": "string",
                                 "value": "[reference(resourceId('Microsoft.DataFactory/factories', parameters('factoryName')), '2018-06-01', 'full').identity.principalId]"}}}
