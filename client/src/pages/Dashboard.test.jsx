@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { screen, waitFor, render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route } from 'react-router-dom'
@@ -110,32 +110,37 @@ describe('Dashboard', () => {
 })
 
 describe('BudgetContextPanel', () => {
-  it('posts budget and items and shows "Can\'t tell" when withinBudget is null', async () => {
+  const budgetPath = '/api/data/governments/Austin/budget'
+  const panel = (props = {}) =>
+    render(<MemoryRouter future={future}><BudgetContextPanel government="Austin" {...props} /></MemoryRouter>)
+
+  it('posts items with the selected government and dates and shows "Can\'t tell" when an item is unpriced', async () => {
     const fetchMock = mockFetch({
-      'POST /api/app/budget-context': [200, {
+      [`POST ${budgetPath}`]: [200, {
         success: true,
-        orgId: 'AUS',
+        government: 'Austin',
         budget: 5000,
+        priceBasis: 'unitPrice',
         items: [
           {
             description: 'laptop', quantity: 2,
-            matchedCategory: 'Microcomputers, Handheld, Laptop, and Notebook', confidence: 0.92,
-            unitPrice: { median: 1000, low: 800, high: 1200, purchases: 40 },
+            matchedCategory: 'Microcomputers, Handheld, Laptop, and Notebook',
+            unitPrice: { median: 1000, low: 800, high: 1200, purchases: 3585 },
             estimatedCost: { low: 1600, typical: 2000, high: 2400 },
           },
           {
             description: 'quantum widget', quantity: 1,
-            matchedCategory: null, confidence: 0,
-            unitPrice: 'not available', estimatedCost: 'not available',
+            matchedCategory: null, unitPrice: 'not available', estimatedCost: 'not available',
           },
         ],
         totalEstimate: { low: 1600, typical: 2000, high: 2400 },
         unpricedItems: ['quantum widget'],
         withinBudget: null,
+        message: '',
       }],
     })
     const ui = userEvent.setup()
-    render(<MemoryRouter future={future}><BudgetContextPanel /></MemoryRouter>)
+    panel({ dateFrom: '2020-01-01', dateTo: '2024-12-31' })
 
     const budget = screen.getByLabelText('Budget (USD)')
     await ui.clear(budget)
@@ -151,13 +156,16 @@ describe('BudgetContextPanel', () => {
     await ui.click(screen.getByRole('button', { name: 'Get context' }))
 
     expect(await screen.findByText("Can't tell — 1 item has no price data")).toBeInTheDocument()
-    const [, options] = callsTo(fetchMock, 'POST', '/api/app/budget-context')[0]
+    const [, options] = callsTo(fetchMock, 'POST', budgetPath)[0]
     expect(options.credentials).toBe('include')
     expect(JSON.parse(options.body)).toEqual({
       budget: 5000,
       items: [{ description: 'laptop', quantity: 2 }, { description: 'quantum widget', quantity: 1 }],
+      from: '2020-01-01',
+      to: '2024-12-31',
     })
     expect(screen.getByText('Microcomputers, Handheld, Laptop, and Notebook')).toBeInTheDocument()
+    expect(screen.getByText('(3,585 purchases)')).toBeInTheDocument()
     expect(screen.getByText('No price data for: quantum widget')).toBeInTheDocument()
     expect(screen.getAllByText('$1,600.00 – $2,400.00 (typical $2,000.00)').length).toBeGreaterThan(0)
   })
@@ -165,12 +173,12 @@ describe('BudgetContextPanel', () => {
   it('shows Within budget and Over budget verdicts', async () => {
     let within = true
     mockFetch({
-      'POST /api/app/budget-context': () => [200, {
+      [`POST ${budgetPath}`]: () => [200, {
         success: true, budget: 20000, items: [], totalEstimate: { low: 1, typical: 2, high: 3 }, withinBudget: within,
       }],
     })
     const ui = userEvent.setup()
-    render(<MemoryRouter future={future}><BudgetContextPanel /></MemoryRouter>)
+    panel()
     await ui.click(screen.getByRole('button', { name: 'Get context' }))
     expect(await screen.findByText('Within budget')).toBeInTheDocument()
     within = false
@@ -178,11 +186,40 @@ describe('BudgetContextPanel', () => {
     expect(await screen.findByText('Over budget')).toBeInTheDocument()
   })
 
-  it('shows the upstream error message', async () => {
-    mockFetch({ 'POST /api/app/budget-context': [502, { error: 'Projects service unavailable' }] })
+  it('shows the data service message for a government without unit prices', async () => {
+    mockFetch({
+      'POST /api/data/governments/Dallas/budget': [200, {
+        success: true, budget: 20000, priceBasis: 'payment', withinBudget: null, totalEstimate: 'not available',
+        items: [{ description: 'Laptop computer', quantity: 10, matchedCategory: null, estimatedCost: 'not available' }],
+        unpricedItems: ['Laptop computer'],
+        message: "Dallas publishes payments, not unit prices, so item costs can't be estimated.",
+      }],
+    })
     const ui = userEvent.setup()
-    render(<MemoryRouter future={future}><BudgetContextPanel /></MemoryRouter>)
+    panel({ government: 'Dallas' })
     await ui.click(screen.getByRole('button', { name: 'Get context' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Projects service unavailable')
+    expect(await screen.findByText(/Dallas publishes payments, not unit prices/)).toBeInTheDocument()
+  })
+
+  it('shows the data service error message', async () => {
+    mockFetch({ [`POST ${budgetPath}`]: [400, { success: false, message: "'items' must list 1 to 20 items." }] })
+    const ui = userEvent.setup()
+    panel()
+    await ui.click(screen.getByRole('button', { name: 'Get context' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent("'items' must list 1 to 20 items.")
+  })
+
+  it('sends the user to log in when the session has expired', async () => {
+    mockFetch({ [`POST ${budgetPath}`]: [401, { success: false }] })
+    const onUnauthorized = vi.fn()
+    const ui = userEvent.setup()
+    panel({ onUnauthorized })
+    await ui.click(screen.getByRole('button', { name: 'Get context' }))
+    await waitFor(() => expect(onUnauthorized).toHaveBeenCalled())
+  })
+
+  it('cannot submit before a government is selected', () => {
+    panel({ government: '' })
+    expect(screen.getByRole('button', { name: 'Get context' })).toBeDisabled()
   })
 })

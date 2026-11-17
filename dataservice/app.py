@@ -84,6 +84,62 @@ def parse_match(text):
     return terms, keywords
 
 
+MAX_BUDGET_ITEMS = 20
+MAX_ITEM_WORDS = 6
+MAX_QUANTITY = 1_000_000
+STOPWORDS = {"and", "or", "of", "the", "for", "with", "to", "in", "on", "per", "an", "new"}
+
+
+def item_word_groups(description):
+    groups = []
+    seen = set()
+    for word in re.findall(r"[a-z0-9]+", description.lower()):
+        if len(word) < 2 or word in STOPWORDS or word in seen:
+            continue
+        seen.add(word)
+        singular = word[:-1] if len(word) > 3 and word.endswith("s") and not word.endswith("ss") else word
+        group = [singular] + [s for s in SYNONYMS.get(singular, []) if s != singular]
+        groups.append(group)
+        if len(groups) == MAX_ITEM_WORDS:
+            break
+    return groups
+
+
+def best_category(groups, candidates):
+    best = None
+    for c in candidates:
+        if c["purchases"] < MIN_PURCHASES_FOR_PRICE:
+            continue
+        name = c["category"].lower()
+        score = sum(1 for g in groups if any(k in name for k in g))
+        typed = sum(1 for g in groups if g[0] in name)
+        key = (score, typed, c["purchases"])
+        if score and (best is None or key > best[0]):
+            best = (key, c["category"])
+    return best[1] if best else None
+
+
+def parse_budget_body(body):
+    if not isinstance(body, dict):
+        raise BadRequest("Send a JSON body with 'budget' and 'items'.")
+    budget = body.get("budget")
+    if isinstance(budget, bool) or not isinstance(budget, (int, float)) or not 0 <= budget <= 1e12:
+        raise BadRequest("'budget' must be a number of 0 or more.")
+    items = body.get("items")
+    if not isinstance(items, list) or not 1 <= len(items) <= MAX_BUDGET_ITEMS:
+        raise BadRequest(f"'items' must list 1 to {MAX_BUDGET_ITEMS} items.")
+    parsed = []
+    for i, item in enumerate(items, start=1):
+        description = item.get("description") if isinstance(item, dict) else None
+        quantity = item.get("quantity") if isinstance(item, dict) else None
+        if not isinstance(description, str) or not 1 <= len(description.strip()) <= 80:
+            raise BadRequest(f"Item {i} needs a description of 1 to 80 characters.")
+        if isinstance(quantity, bool) or not isinstance(quantity, int) or not 1 <= quantity <= MAX_QUANTITY:
+            raise BadRequest(f"Item {i} needs a whole-number quantity of 1 or more.")
+        parsed.append({"description": description.strip(), "quantity": quantity})
+    return float(budget), parsed
+
+
 class BadRequest(Exception):
     pass
 
@@ -172,6 +228,74 @@ def create_app(repository=None):
                 f"No {name} purchases match {', '.join(terms)} in this date range." if empty and terms
                 else f"No purchase data for {name} in this date range." if empty else ""
             ),
+        })
+
+    @bp.post("/governments/<government>/budget")
+    def budget_estimate(government):
+        names = {g["government"].lower(): g["government"] for g in known_governments()}
+        name = names.get(government.lower())
+        if name is None:
+            return fail(f"Unknown government '{government}'. Known: {', '.join(sorted(names.values()))}.", 404)
+        body = request.get_json(silent=True)
+        try:
+            budget, items = parse_budget_body(body)
+            date_from = parse_day(body.get("from"), "from")
+            date_to = parse_day(body.get("to"), "to")
+        except BadRequest as exc:
+            return fail(str(exc), 400)
+        if date_from and date_to and date_from > date_to:
+            return fail("'from' must be on or before 'to'.", 400)
+
+        base = {"success": True, "government": name, "from": iso_day(date_from), "to": iso_day(date_to),
+                "budget": money(budget)}
+        if not repository.has_unit_price(name):
+            return jsonify({
+                **base,
+                "priceBasis": "payment",
+                "items": [{**i, "matchedCategory": None, "unitPrice": NOT_AVAILABLE, "estimatedCost": NOT_AVAILABLE}
+                          for i in items],
+                "totalEstimate": NOT_AVAILABLE,
+                "withinBudget": None,
+                "unpricedItems": [i["description"] for i in items],
+                "message": f"{name} publishes payments, not unit prices, so item costs can't be estimated. "
+                           "Pick a government with unit prices.",
+            })
+
+        groups = [item_word_groups(i["description"]) for i in items]
+        candidates = repository.price_candidates(name, date_from, date_to,
+                                                 [[k for g in gs for k in g] for gs in groups])
+        matched = [best_category(gs, cs) for gs, cs in zip(groups, candidates)]
+        prices = repository.category_prices(name, date_from, date_to, sorted({m for m in matched if m}))
+
+        result_items, unpriced = [], []
+        total = {"low": 0.0, "typical": 0.0, "high": 0.0}
+        for item, category in zip(items, matched):
+            p = prices.get(category) if category else None
+            if p is None or p["purchases"] < MIN_PURCHASES_FOR_PRICE:
+                unpriced.append(item["description"])
+                result_items.append({**item, "matchedCategory": category,
+                                     "unitPrice": NOT_AVAILABLE, "estimatedCost": NOT_AVAILABLE})
+                continue
+            raw = {"low": p["low"] * item["quantity"], "typical": p["median"] * item["quantity"],
+                   "high": p["high"] * item["quantity"]}
+            for k in total:
+                total[k] += raw[k]
+            cost = {k: money(v) for k, v in raw.items()}
+            result_items.append({**item, "matchedCategory": category,
+                                 "unitPrice": {"median": money(p["median"]), "low": money(p["low"]),
+                                               "high": money(p["high"]), "purchases": p["purchases"]},
+                                 "estimatedCost": cost})
+
+        priced_any = len(unpriced) < len(items)
+        total_estimate = {k: money(v) for k, v in total.items()} if priced_any else NOT_AVAILABLE
+        return jsonify({
+            **base,
+            "priceBasis": "unitPrice",
+            "items": result_items,
+            "totalEstimate": total_estimate,
+            "withinBudget": (round(total["typical"], 2) <= budget) if not unpriced else None,
+            "unpricedItems": unpriced,
+            "message": "",
         })
 
     app.register_blueprint(bp, url_prefix="/api/data")
