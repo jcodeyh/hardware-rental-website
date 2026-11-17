@@ -7,6 +7,7 @@ import grpc
 from app.core.config import get_settings
 from app.modules.hardware.grpc_client import HardwareGrpcClient
 from app.modules.hardware.grpc_service import HardwareService
+from app.modules.projects.grpc_client import ProjectsGrpcClient
 from app.modules.projects.grpc_service import ProjectsService
 from app.modules.projects.rest_client import ProjectsRestClient
 from proto import hardware_pb2_grpc, projects_pb2_grpc
@@ -28,18 +29,27 @@ class GrpcRuntime:
 async def start_grpc_runtime():
     settings = get_settings()
 
-    if not settings.projects_api_base_url:
-        raise ValueError("PROJECTS_API_BASE_URL is required")
+    if not settings.projects_grpc_target and not settings.projects_api_base_url:
+        raise ValueError("PROJECTS_GRPC_TARGET or PROJECTS_API_BASE_URL is required")
 
     clients = []
     server = grpc.aio.server()
 
     try:
-        projects_client = ProjectsRestClient(
-            base_url=settings.projects_api_base_url,
-            timeout=settings.projects_api_timeout,
-            hardware_item_field=settings.projects_hardware_field,
-        )
+        if settings.projects_grpc_target:
+            projects_client = ProjectsGrpcClient(
+                target=settings.projects_grpc_target,
+                timeout=settings.projects_grpc_timeout,
+                use_tls=settings.projects_grpc_tls,
+            )
+            logger.info("ProjectsService: gRPC %s", settings.projects_grpc_target)
+        else:
+            projects_client = ProjectsRestClient(
+                base_url=settings.projects_api_base_url,
+                timeout=settings.projects_api_timeout,
+                hardware_item_field=settings.projects_hardware_field,
+            )
+            logger.info("ProjectsService: REST %s", settings.projects_api_base_url)
         clients.append(projects_client)
 
         projects_pb2_grpc.add_ProjectsServiceServicer_to_server(

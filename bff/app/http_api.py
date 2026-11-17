@@ -25,6 +25,7 @@ REQUEST_ID_PATTERN = r"^[A-Za-z0-9_:-]{1,60}$"
 VENDOR_ID_PATTERN = r"^[A-Za-z0-9_.:@-]{1,200}$"
 SESSION_MAX_AGE_SECONDS = 8 * 60 * 60
 PENDING_LOGIN_SECONDS = 5 * 60
+PROJECTS_TIMEOUT = 75
 
 settings = get_settings()
 
@@ -215,7 +216,7 @@ async def _fetch_project(request: Request, project_id: str, org_id: str):
     stub = projects_pb2_grpc.ProjectsServiceStub(_channel(request))
     result = await stub.GetProject(
         projects_pb2.GetProjectRequest(project_id=project_id, org_id=org_id),
-        timeout=30,
+        timeout=PROJECTS_TIMEOUT,
     )
     return result.project_info
 
@@ -333,7 +334,7 @@ async def create_project(
         payload.project_desc = body.project_desc
 
     try:
-        result = await stub.CreateProject(payload, timeout=30)
+        result = await stub.CreateProject(payload, timeout=PROJECTS_TIMEOUT)
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
     _operation_result(result)
@@ -384,7 +385,7 @@ async def join_project(
                 org_id=user["orgId"],
                 user_id=user["userId"],
             ),
-            timeout=30,
+            timeout=PROJECTS_TIMEOUT,
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
@@ -405,7 +406,7 @@ async def leave_project(
                 org_id=user["orgId"],
                 user_id=user["userId"],
             ),
-            timeout=30,
+            timeout=PROJECTS_TIMEOUT,
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
@@ -423,7 +424,7 @@ async def list_projects(
     if projectId is not None:
         args["project_id"] = projectId
     try:
-        result = await stub.SearchProjects(projects_pb2.SearchProjectsRequest(**args), timeout=30)
+        result = await stub.SearchProjects(projects_pb2.SearchProjectsRequest(**args), timeout=PROJECTS_TIMEOUT)
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
     return {"projectList": [
@@ -438,7 +439,7 @@ async def list_my_projects(request: Request, user: dict = Depends(_current_user)
     try:
         result = await stub.SearchProjects(
             projects_pb2.SearchProjectsRequest(org_id=user["orgId"]),
-            timeout=30,
+            timeout=PROJECTS_TIMEOUT,
         )
         projects = await asyncio.gather(*[
             _fetch_project(request, summary.project_id, user["orgId"])
@@ -647,7 +648,7 @@ async def unit_price(
     try:
         result = await stub.GetUnitPrice(
             projects_pb2.UnitPriceRequest(category=body.category),
-            timeout=30,
+            timeout=PROJECTS_TIMEOUT,
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)
@@ -664,7 +665,7 @@ async def department_spend(
     try:
         result = await stub.GetDepartmentSpend(
             projects_pb2.DepartmentSpendRequest(keyword=body.keyword),
-            timeout=30,
+            timeout=PROJECTS_TIMEOUT,
         )
     except grpc.aio.AioRpcError as error:
         _grpc_error(error)

@@ -41,6 +41,9 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
         try:
             return await operation()
 
+        except grpc.aio.AioRpcError as exc:
+            await context.abort(exc.code(), exc.details() or f"Projects API returned {exc.code().name}")
+
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             code = HTTP_TO_GRPC.get(
