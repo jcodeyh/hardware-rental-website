@@ -108,10 +108,6 @@ class AuthService {
   getMyHardware() {
     return this.send(URLs.myHardware);
   }
-
-  getBudgetContext(requestObject) {
-    return this.send(URLs.budgetContext, "POST", requestObject);
-  }
 }
 
 export default new AuthService();

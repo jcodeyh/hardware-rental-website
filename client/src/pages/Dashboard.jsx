@@ -25,6 +25,28 @@ async function callData(path) {
   }
 }
 
+async function postData(path, payload) {
+  try {
+    const response = await fetch(GATEWAY + path, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let body;
+    try {
+      body = await response.json();
+    } catch {
+      body = {};
+    }
+    if (response.status === 401) return { unauthorized: true, body };
+    if (!response.ok && body.success === undefined) body.success = false;
+    return { body };
+  } catch {
+    return { body: { success: false, message: "Could not reach the gateway. Try again in a minute." } };
+  }
+}
+
 const usd = (v) =>
   v === NA || v === null || v === undefined || typeof v !== "number"
     ? "Not available"
@@ -162,11 +184,6 @@ function unpricedList(result) {
   return (result.items || []).filter((i) => !hasPrice(i)).map((i) => i.description);
 }
 
-function confidenceText(c) {
-  if (typeof c === "number") return c <= 1 ? `${Math.round(c * 100)}%` : String(c);
-  return c || "";
-}
-
 function costRange(cost) {
   if (!cost || typeof cost !== "object") return "No price data";
   return `${usd(cost.low)} – ${usd(cost.high)} (typical ${usd(cost.typical)})`;
@@ -185,7 +202,7 @@ function BudgetVerdict({ result }) {
 
 const emptyRow = () => ({ description: "", quantity: 1 });
 
-export function BudgetContextPanel({ wide, onUnauthorized }) {
+export function BudgetContextPanel({ government, dateFrom, dateTo, wide, onUnauthorized }) {
   const [budget, setBudget] = useState(20000);
   const [rows, setRows] = useState([{ description: "Laptop computer", quantity: 10 }]);
   const [result, setResult] = useState(null);
@@ -207,23 +224,30 @@ export function BudgetContextPanel({ wide, onUnauthorized }) {
       setError("Each item needs a description and a whole-number quantity of 1 or more.");
       return;
     }
+    if (!government) {
+      setError("Pick a government first.");
+      return;
+    }
     setError("");
     setBusy(true);
+    const payload = { budget: budgetValue, items };
+    if (dateFrom) payload.from = dateFrom;
+    if (dateTo) payload.to = dateTo;
     try {
-      const body = await authService.getBudgetContext({ budget: budgetValue, items });
-      if (body.status === 401) {
+      const { unauthorized, body } = await postData(
+        `/api/data/governments/${encodeURIComponent(government)}/budget`,
+        payload,
+      );
+      if (unauthorized) {
         onUnauthorized?.();
         return;
       }
-      if (body.error || body.success === false) {
+      if (body.success === false) {
         setResult(null);
-        setError(body.error || body.errorMessage || body.message || "Could not get budget context.");
+        setError(body.message || "Could not estimate the budget.");
         return;
       }
       setResult(body);
-    } catch {
-      setResult(null);
-      setError("Could not reach the gateway. Try again in a minute.");
     } finally {
       setBusy(false);
     }
@@ -270,18 +294,20 @@ export function BudgetContextPanel({ wide, onUnauthorized }) {
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setRows((prev) => [...prev, emptyRow()])}>
             Add item
           </button>
-          <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
+          <button className="btn btn-primary btn-sm" type="submit" disabled={busy || !government}>
             {busy ? "Checking…" : "Get context"}
           </button>
         </div>
       </form>
       <p className="dash-note">
-        Items are matched to purchase categories from public records. Category names can be long — Austin uses names like
-        “Microcomputers, Handheld, Laptop, and Notebook” — so a plain description such as “laptop” works best.
+        Each item is matched to the {government || "selected government"}’s most-bought purchase category containing its
+        words, then priced at that category’s typical unit price for the dates above. Plain words such as “laptop” or
+        “office chair” work.
       </p>
       {error && <p className="dash-error" role="alert">{error}</p>}
       {result && (
         <div className="dash-budget-result">
+          {result.message && <p className="dash-sample">{result.message}</p>}
           <BudgetVerdict result={result} />
           <table className="table table-sm">
             <thead>
@@ -294,8 +320,8 @@ export function BudgetContextPanel({ wide, onUnauthorized }) {
                   <td>{item.quantity}</td>
                   <td>
                     {item.matchedCategory || "No match"}
-                    {item.confidence !== undefined && item.confidence !== null && (
-                      <small className="dash-muted"> ({confidenceText(item.confidence)} match)</small>
+                    {item.unitPrice && typeof item.unitPrice === "object" && (
+                      <small className="dash-muted"> ({item.unitPrice.purchases.toLocaleString()} purchases)</small>
                     )}
                   </td>
                   <td>{costRange(item.estimatedCost)}</td>
@@ -633,7 +659,7 @@ export default function Dashboard() {
           </>
         )}
 
-        <BudgetContextPanel wide onUnauthorized={toLogin} />
+        <BudgetContextPanel government={selected} dateFrom={dateFrom} dateTo={dateTo} wide onUnauthorized={toLogin} />
       </div>
       </main>
     </div>

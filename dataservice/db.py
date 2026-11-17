@@ -119,6 +119,41 @@ ORDER BY COUNT(*) DESC, vendor;
 """
 
 
+CANDIDATE_LIMIT = 50
+
+
+def _sql_price_candidates(match):
+    return f"""
+SELECT TOP ({CANDIDATE_LIMIT}) category, COUNT(*) AS purchases
+FROM gov.purchases
+WHERE {_FILTER} AND category IS NOT NULL AND unit_price > 0{match}
+GROUP BY category
+ORDER BY COUNT(*) DESC, category;
+"""
+
+
+def _sql_category_prices(count):
+    placeholders = ", ".join("?" for _ in range(count))
+    return f"""
+SELECT DISTINCT category,
+       COUNT(*) OVER (PARTITION BY category) AS purchases,
+       PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY v) OVER (PARTITION BY category) AS median,
+       PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY v) OVER (PARTITION BY category) AS low,
+       PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY v) OVER (PARTITION BY category) AS high
+FROM (
+    SELECT category, CAST(unit_price AS float) AS v
+    FROM gov.purchases
+    WHERE {_FILTER} AND unit_price > 0 AND category IN ({placeholders})
+) AS priced;
+"""
+
+
+def _date_bounds(date_from, date_to):
+    start = date_from or MIN_DATE
+    end = (date_to + timedelta(days=1)) if date_to else MAX_DATE
+    return start, end
+
+
 def _like_pattern(keyword):
     escaped = keyword.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[")
     return f"%{escaped}%"
@@ -163,3 +198,27 @@ class SqlRepository:
             "vendors": [{"vendor": r.vendor, "purchases": r.purchases,
                          "total_amount": r.total_amount} for r in vendors],
         }
+
+    def has_unit_price(self, government):
+        with connect() as conn:
+            return bool(conn.cursor().execute(SQL_HAS_UNIT_PRICE, government).fetchval())
+
+    def price_candidates(self, government, date_from, date_to, keyword_lists):
+        f = (government, *_date_bounds(date_from, date_to))
+        results = []
+        with connect() as conn:
+            cur = conn.cursor()
+            for keywords in keyword_lists:
+                match, patterns = category_match(keywords)
+                rows = cur.execute(_sql_price_candidates(match), *f, *patterns).fetchall() if keywords else []
+                results.append([{"category": r.category, "purchases": r.purchases} for r in rows])
+        return results
+
+    def category_prices(self, government, date_from, date_to, categories):
+        if not categories:
+            return {}
+        f = (government, *_date_bounds(date_from, date_to))
+        with connect() as conn:
+            rows = conn.cursor().execute(_sql_category_prices(len(categories)), *f, *categories).fetchall()
+        return {r.category: {"purchases": r.purchases, "median": r.median, "low": r.low, "high": r.high}
+                for r in rows}

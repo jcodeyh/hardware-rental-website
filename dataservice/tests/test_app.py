@@ -130,3 +130,139 @@ def test_category_match_sql_is_parameterized_and_escaped():
     assert params == ["%laptop%", "%50\\%\\_off\\[x]%"]
     assert category_match(None) == ("", [])
     assert clause in _sql_top_vendors(clause)
+
+
+class BudgetRepository(FakeRepository):
+    def __init__(self):
+        super().__init__()
+        self.candidate_calls = []
+        self.price_calls = []
+
+    def has_unit_price(self, government):
+        return government != "Dallas"
+
+    def price_candidates(self, government, date_from, date_to, keyword_lists):
+        self.candidate_calls.append((government, date_from, date_to, keyword_lists))
+        table = [
+            {"category": "COMPUTER ACCESSORIES AND SUPPLIES", "purchases": 3796},
+            {"category": "Microcomputers, Handheld, Laptop, and Notebook", "purchases": 410},
+            {"category": "Monitors, Color and Monochrome", "purchases": 1972},
+            {"category": "D082 Adult defibrillation / monitor combination pads", "purchases": 53},
+            {"category": "Laptop Bags", "purchases": 2},
+        ]
+        return [[c for c in table if any(k in c["category"].lower() for k in kws)] for kws in keyword_lists]
+
+    def category_prices(self, government, date_from, date_to, categories):
+        self.price_calls.append(categories)
+        known = {
+            "Microcomputers, Handheld, Laptop, and Notebook": {"purchases": 410, "median": 900.0, "low": 800.0, "high": 1200.004},
+            "Monitors, Color and Monochrome": {"purchases": 1972, "median": 192.29, "low": 154.94, "high": 297.34},
+        }
+        return {c: known[c] for c in categories if c in known}
+
+
+@pytest.fixture
+def budget_client():
+    repo = BudgetRepository()
+    return create_app(repo).test_client(), repo
+
+
+def test_budget_matches_most_words_then_most_purchases(budget_client):
+    client, repo = budget_client
+    body = client.post("/api/data/governments/austin/budget", json={
+        "budget": 20000, "from": "2020-01-01", "to": "2026-10-31",
+        "items": [{"description": "Laptop computers", "quantity": 10}, {"description": "monitor", "quantity": 5}],
+    }).get_json()
+    assert body["success"] is True
+    assert body["government"] == "Austin"
+    laptop, monitor = body["items"]
+    assert laptop["matchedCategory"] == "Microcomputers, Handheld, Laptop, and Notebook"
+    assert laptop["estimatedCost"] == {"low": 8000.0, "typical": 9000.0, "high": 12000.04}
+    assert laptop["unitPrice"]["purchases"] == 410
+    assert monitor["matchedCategory"] == "Monitors, Color and Monochrome"
+    assert body["totalEstimate"] == {"low": 8774.7, "typical": 9961.45, "high": 13486.74}
+    assert body["withinBudget"] is True
+    assert body["unpricedItems"] == []
+    gov, date_from, date_to, keyword_lists = repo.candidate_calls[0]
+    assert (gov, date_from, date_to) == ("Austin", date(2020, 1, 1), date(2026, 10, 31))
+    assert keyword_lists[0] == ["laptop", "notebook", "computer", "microcomputer"]
+    assert keyword_lists[1] == ["monitor", "display"]
+
+
+def test_budget_unmatched_item_makes_verdict_unknown(budget_client):
+    client, _ = budget_client
+    body = client.post("/governments/Austin/budget", json={
+        "budget": 100, "items": [{"description": "monitor", "quantity": 1}, {"description": "Water", "quantity": 10}],
+    }).get_json()
+    water = body["items"][1]
+    assert water["matchedCategory"] is None
+    assert water["estimatedCost"] == "not available"
+    assert body["unpricedItems"] == ["Water"]
+    assert body["withinBudget"] is None
+    assert body["totalEstimate"]["typical"] == 192.29
+
+
+def test_budget_over_budget(budget_client):
+    client, _ = budget_client
+    body = client.post("/governments/austin/budget", json={
+        "budget": 100, "items": [{"description": "laptop", "quantity": 1}],
+    }).get_json()
+    assert body["withinBudget"] is False
+
+
+def test_budget_skips_categories_with_too_few_purchases(budget_client):
+    client, _ = budget_client
+    body = client.post("/governments/austin/budget", json={
+        "budget": 100, "items": [{"description": "bags", "quantity": 1}],
+    }).get_json()
+    assert body["items"][0]["matchedCategory"] is None
+    assert body["totalEstimate"] == "not available"
+
+
+def test_budget_payment_only_government(budget_client):
+    client, repo = budget_client
+    body = client.post("/governments/dallas/budget", json={
+        "budget": 100, "items": [{"description": "laptop", "quantity": 1}],
+    }).get_json()
+    assert body["priceBasis"] == "payment"
+    assert body["withinBudget"] is None
+    assert "payments, not unit prices" in body["message"]
+    assert repo.candidate_calls == []
+
+
+@pytest.mark.parametrize("payload, message", [
+    (None, "JSON body"),
+    ({"budget": -1, "items": [{"description": "x", "quantity": 1}]}, "'budget'"),
+    ({"budget": True, "items": [{"description": "x", "quantity": 1}]}, "'budget'"),
+    ({"budget": 1, "items": []}, "'items'"),
+    ({"budget": 1, "items": [{"description": " ", "quantity": 1}]}, "Item 1 needs a description"),
+    ({"budget": 1, "items": [{"description": "x", "quantity": 1.5}]}, "Item 1 needs a whole-number"),
+    ({"budget": 1, "items": [{"description": "x", "quantity": 1}], "from": "2026-02-01", "to": "2026-01-01"}, "'from'"),
+])
+def test_budget_rejects_bad_input(budget_client, payload, message):
+    client, _ = budget_client
+    response = client.post("/governments/austin/budget", json=payload) if payload is not None else \
+        client.post("/governments/austin/budget", data="nope", content_type="application/json")
+    assert response.status_code == 400
+    assert message in response.get_json()["message"]
+
+
+def test_budget_unknown_government(budget_client):
+    client, _ = budget_client
+    response = client.post("/governments/houston/budget", json={"budget": 1, "items": [{"description": "x", "quantity": 1}]})
+    assert response.status_code == 404
+
+
+def test_best_category_prefers_the_typed_word_over_synonyms():
+    from app import best_category, item_word_groups
+    groups = item_word_groups("desktop pc")
+    candidates = [
+        {"category": "COMPUTER ACCESSORIES AND SUPPLIES", "purchases": 3796},
+        {"category": "Microcomputers, Desktop or Towerbased", "purchases": 583},
+    ]
+    assert best_category(groups, candidates) == "Microcomputers, Desktop or Towerbased"
+
+
+def test_item_word_groups_drops_stopwords_and_duplicates():
+    from app import item_word_groups
+    assert item_word_groups("Chairs for the office, office") == [["chair"], ["office"]]

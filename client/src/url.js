@@ -15,7 +15,6 @@ const URLs = {
   "checkIn"         : "/hardware/check-in",
 
   "myHardware"      : "/dashboard/my-hardware",
-  "budgetContext"   : "/budget-context",
 };
 
 export default URLs;
