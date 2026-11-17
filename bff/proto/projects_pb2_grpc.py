@@ -36,42 +36,42 @@ class ProjectsServiceStub:
             channel: A grpc.Channel.
         """
         self.CreateProject = channel.unary_unary(
-                '/projects.v1.ProjectsService/CreateProject',
+                '/bff.projects.v1.ProjectsService/CreateProject',
                 request_serializer=proto_dot_projects__pb2.CreateProjectRequest.SerializeToString,
                 response_deserializer=proto_dot_projects__pb2.OperationResponse.FromString,
                 _registered_method=True)
         self.JoinProject = channel.unary_unary(
-                '/projects.v1.ProjectsService/JoinProject',
+                '/bff.projects.v1.ProjectsService/JoinProject',
                 request_serializer=proto_dot_projects__pb2.ProjectMembershipRequest.SerializeToString,
                 response_deserializer=proto_dot_projects__pb2.OperationResponse.FromString,
                 _registered_method=True)
         self.LeaveProject = channel.unary_unary(
-                '/projects.v1.ProjectsService/LeaveProject',
+                '/bff.projects.v1.ProjectsService/LeaveProject',
                 request_serializer=proto_dot_projects__pb2.ProjectMembershipRequest.SerializeToString,
                 response_deserializer=proto_dot_projects__pb2.OperationResponse.FromString,
                 _registered_method=True)
         self.SearchProjects = channel.unary_unary(
-                '/projects.v1.ProjectsService/SearchProjects',
+                '/bff.projects.v1.ProjectsService/SearchProjects',
                 request_serializer=proto_dot_projects__pb2.SearchProjectsRequest.SerializeToString,
                 response_deserializer=proto_dot_projects__pb2.SearchProjectsResponse.FromString,
                 _registered_method=True)
         self.GetProject = channel.unary_unary(
-                '/projects.v1.ProjectsService/GetProject',
+                '/bff.projects.v1.ProjectsService/GetProject',
                 request_serializer=proto_dot_projects__pb2.GetProjectRequest.SerializeToString,
                 response_deserializer=proto_dot_projects__pb2.GetProjectResponse.FromString,
                 _registered_method=True)
         self.GetBudgetContext = channel.unary_unary(
-                '/projects.v1.ProjectsService/GetBudgetContext',
+                '/bff.projects.v1.ProjectsService/GetBudgetContext',
                 request_serializer=proto_dot_projects__pb2.BudgetContextRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_struct__pb2.Struct.FromString,
                 _registered_method=True)
         self.GetUnitPrice = channel.unary_unary(
-                '/projects.v1.ProjectsService/GetUnitPrice',
+                '/bff.projects.v1.ProjectsService/GetUnitPrice',
                 request_serializer=proto_dot_projects__pb2.UnitPriceRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_struct__pb2.Struct.FromString,
                 _registered_method=True)
         self.GetDepartmentSpend = channel.unary_unary(
-                '/projects.v1.ProjectsService/GetDepartmentSpend',
+                '/bff.projects.v1.ProjectsService/GetDepartmentSpend',
                 request_serializer=proto_dot_projects__pb2.DepartmentSpendRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_struct__pb2.Struct.FromString,
                 _registered_method=True)
@@ -173,9 +173,9 @@ def add_ProjectsServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'projects.v1.ProjectsService', rpc_method_handlers)
+            'bff.projects.v1.ProjectsService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('projects.v1.ProjectsService', rpc_method_handlers)
+    server.add_registered_method_handlers('bff.projects.v1.ProjectsService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -196,7 +196,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/CreateProject',
+            '/bff.projects.v1.ProjectsService/CreateProject',
             proto_dot_projects__pb2.CreateProjectRequest.SerializeToString,
             proto_dot_projects__pb2.OperationResponse.FromString,
             options,
@@ -223,7 +223,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/JoinProject',
+            '/bff.projects.v1.ProjectsService/JoinProject',
             proto_dot_projects__pb2.ProjectMembershipRequest.SerializeToString,
             proto_dot_projects__pb2.OperationResponse.FromString,
             options,
@@ -250,7 +250,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/LeaveProject',
+            '/bff.projects.v1.ProjectsService/LeaveProject',
             proto_dot_projects__pb2.ProjectMembershipRequest.SerializeToString,
             proto_dot_projects__pb2.OperationResponse.FromString,
             options,
@@ -277,7 +277,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/SearchProjects',
+            '/bff.projects.v1.ProjectsService/SearchProjects',
             proto_dot_projects__pb2.SearchProjectsRequest.SerializeToString,
             proto_dot_projects__pb2.SearchProjectsResponse.FromString,
             options,
@@ -304,7 +304,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/GetProject',
+            '/bff.projects.v1.ProjectsService/GetProject',
             proto_dot_projects__pb2.GetProjectRequest.SerializeToString,
             proto_dot_projects__pb2.GetProjectResponse.FromString,
             options,
@@ -331,7 +331,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/GetBudgetContext',
+            '/bff.projects.v1.ProjectsService/GetBudgetContext',
             proto_dot_projects__pb2.BudgetContextRequest.SerializeToString,
             google_dot_protobuf_dot_struct__pb2.Struct.FromString,
             options,
@@ -358,7 +358,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/GetUnitPrice',
+            '/bff.projects.v1.ProjectsService/GetUnitPrice',
             proto_dot_projects__pb2.UnitPriceRequest.SerializeToString,
             google_dot_protobuf_dot_struct__pb2.Struct.FromString,
             options,
@@ -385,7 +385,7 @@ class ProjectsService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/projects.v1.ProjectsService/GetDepartmentSpend',
+            '/bff.projects.v1.ProjectsService/GetDepartmentSpend',
             proto_dot_projects__pb2.DepartmentSpendRequest.SerializeToString,
             google_dot_protobuf_dot_struct__pb2.Struct.FromString,
             options,

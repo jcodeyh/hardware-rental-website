@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     projects_api_base_url: str = ""
     projects_api_timeout: float = 15.0
     projects_hardware_field: str = "capacity"
+    projects_grpc_target: str = ""
+    projects_grpc_tls: bool = False
+    projects_grpc_timeout: float = 60.0
 
     hardware_grpc_target: str = ""
     hardware_grpc_tls: bool = True

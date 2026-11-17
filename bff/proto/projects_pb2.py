@@ -25,41 +25,41 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/projects.proto\x12\x0bprojects.v1\x1a\x1cgoogle/protobuf/struct.proto\"7\n\x0cHardwareItem\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nallocation\x18\x02 \x01(\x05\"\xc5\x01\n\x07Project\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x14\n\x0cproject_desc\x18\x03 \x01(\t\x12\x12\n\ncreator_id\x18\x04 \x01(\t\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItem\x12\x14\n\x0cjoined_users\x18\x08 \x03(\t\"\xd2\x01\n\x14\x43reateProjectRequest\x12\x12\n\ncreator_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x14\n\x0cproject_name\x18\x03 \x01(\t\x12\x19\n\x0cproject_desc\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x30\n\rhardware_list\x18\x07 \x03(\x0b\x32\x19.projects.v1.HardwareItemB\x0f\n\r_project_desc\"O\n\x18ProjectMembershipRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\"_\n\x15SearchProjectsRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x13\n\x06org_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x42\r\n\x0b_project_idB\t\n\x07_org_id\"J\n\x0eProjectSummary\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"K\n\x16SearchProjectsResponse\x12\x31\n\x0cproject_list\x18\x01 \x03(\x0b\x32\x1b.projects.v1.ProjectSummary\"7\n\x11GetProjectRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\"@\n\x12GetProjectResponse\x12*\n\x0cproject_info\x18\x01 \x01(\x0b\x32\x14.projects.v1.Project\";\n\x11OperationResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t\"3\n\nBudgetItem\x12\x13\n\x0b\x64\x65scription\x18\x01 \x01(\t\x12\x10\n\x08quantity\x18\x02 \x01(\x05\"^\n\x14\x42udgetContextRequest\x12\x0e\n\x06org_id\x18\x01 \x01(\t\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x01\x12&\n\x05items\x18\x03 \x03(\x0b\x32\x17.projects.v1.BudgetItem\"$\n\x10UnitPriceRequest\x12\x10\n\x08\x63\x61tegory\x18\x01 \x01(\t\")\n\x16\x44\x65partmentSpendRequest\x12\x0f\n\x07keyword\x18\x01 \x01(\t2\xa8\x05\n\x0fProjectsService\x12R\n\rCreateProject\x12!.projects.v1.CreateProjectRequest\x1a\x1e.projects.v1.OperationResponse\x12T\n\x0bJoinProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12U\n\x0cLeaveProject\x12%.projects.v1.ProjectMembershipRequest\x1a\x1e.projects.v1.OperationResponse\x12Y\n\x0eSearchProjects\x12\".projects.v1.SearchProjectsRequest\x1a#.projects.v1.SearchProjectsResponse\x12M\n\nGetProject\x12\x1e.projects.v1.GetProjectRequest\x1a\x1f.projects.v1.GetProjectResponse\x12N\n\x10GetBudgetContext\x12!.projects.v1.BudgetContextRequest\x1a\x17.google.protobuf.Struct\x12\x46\n\x0cGetUnitPrice\x12\x1d.projects.v1.UnitPriceRequest\x1a\x17.google.protobuf.Struct\x12R\n\x12GetDepartmentSpend\x12#.projects.v1.DepartmentSpendRequest\x1a\x17.google.protobuf.Structb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14proto/projects.proto\x12\x0f\x62\x66\x66.projects.v1\x1a\x1cgoogle/protobuf/struct.proto\"7\n\x0cHardwareItem\x12\x13\n\x0bhardware_id\x18\x01 \x01(\t\x12\x12\n\nallocation\x18\x02 \x01(\x05\"\xc9\x01\n\x07Project\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x14\n\x0cproject_desc\x18\x03 \x01(\t\x12\x12\n\ncreator_id\x18\x04 \x01(\t\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x34\n\rhardware_list\x18\x07 \x03(\x0b\x32\x1d.bff.projects.v1.HardwareItem\x12\x14\n\x0cjoined_users\x18\x08 \x03(\t\"\xd6\x01\n\x14\x43reateProjectRequest\x12\x12\n\ncreator_id\x18\x01 \x01(\t\x12\x12\n\nproject_id\x18\x02 \x01(\t\x12\x14\n\x0cproject_name\x18\x03 \x01(\t\x12\x19\n\x0cproject_desc\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x0e\n\x06org_id\x18\x05 \x01(\t\x12\x0e\n\x06\x62udget\x18\x06 \x01(\x03\x12\x34\n\rhardware_list\x18\x07 \x03(\x0b\x32\x1d.bff.projects.v1.HardwareItemB\x0f\n\r_project_desc\"O\n\x18ProjectMembershipRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\x12\x0f\n\x07user_id\x18\x03 \x01(\t\"_\n\x15SearchProjectsRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x13\n\x06org_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x42\r\n\x0b_project_idB\t\n\x07_org_id\"J\n\x0eProjectSummary\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x0e\n\x06org_id\x18\x03 \x01(\t\"O\n\x16SearchProjectsResponse\x12\x35\n\x0cproject_list\x18\x01 \x03(\x0b\x32\x1f.bff.projects.v1.ProjectSummary\"7\n\x11GetProjectRequest\x12\x12\n\nproject_id\x18\x01 \x01(\t\x12\x0e\n\x06org_id\x18\x02 \x01(\t\"D\n\x12GetProjectResponse\x12.\n\x0cproject_info\x18\x01 \x01(\x0b\x32\x18.bff.projects.v1.Project\";\n\x11OperationResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t\"3\n\nBudgetItem\x12\x13\n\x0b\x64\x65scription\x18\x01 \x01(\t\x12\x10\n\x08quantity\x18\x02 \x01(\x05\"b\n\x14\x42udgetContextRequest\x12\x0e\n\x06org_id\x18\x01 \x01(\t\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x01\x12*\n\x05items\x18\x03 \x03(\x0b\x32\x1b.bff.projects.v1.BudgetItem\"$\n\x10UnitPriceRequest\x12\x10\n\x08\x63\x61tegory\x18\x01 \x01(\t\")\n\x16\x44\x65partmentSpendRequest\x12\x0f\n\x07keyword\x18\x01 \x01(\t2\xdc\x05\n\x0fProjectsService\x12Z\n\rCreateProject\x12%.bff.projects.v1.CreateProjectRequest\x1a\".bff.projects.v1.OperationResponse\x12\\\n\x0bJoinProject\x12).bff.projects.v1.ProjectMembershipRequest\x1a\".bff.projects.v1.OperationResponse\x12]\n\x0cLeaveProject\x12).bff.projects.v1.ProjectMembershipRequest\x1a\".bff.projects.v1.OperationResponse\x12\x61\n\x0eSearchProjects\x12&.bff.projects.v1.SearchProjectsRequest\x1a\'.bff.projects.v1.SearchProjectsResponse\x12U\n\nGetProject\x12\".bff.projects.v1.GetProjectRequest\x1a#.bff.projects.v1.GetProjectResponse\x12R\n\x10GetBudgetContext\x12%.bff.projects.v1.BudgetContextRequest\x1a\x17.google.protobuf.Struct\x12J\n\x0cGetUnitPrice\x12!.bff.projects.v1.UnitPriceRequest\x1a\x17.google.protobuf.Struct\x12V\n\x12GetDepartmentSpend\x12\'.bff.projects.v1.DepartmentSpendRequest\x1a\x17.google.protobuf.Structb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.projects_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_HARDWAREITEM']._serialized_start=67
-  _globals['_HARDWAREITEM']._serialized_end=122
-  _globals['_PROJECT']._serialized_start=125
-  _globals['_PROJECT']._serialized_end=322
-  _globals['_CREATEPROJECTREQUEST']._serialized_start=325
-  _globals['_CREATEPROJECTREQUEST']._serialized_end=535
-  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_start=537
-  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_end=616
-  _globals['_SEARCHPROJECTSREQUEST']._serialized_start=618
-  _globals['_SEARCHPROJECTSREQUEST']._serialized_end=713
-  _globals['_PROJECTSUMMARY']._serialized_start=715
-  _globals['_PROJECTSUMMARY']._serialized_end=789
-  _globals['_SEARCHPROJECTSRESPONSE']._serialized_start=791
-  _globals['_SEARCHPROJECTSRESPONSE']._serialized_end=866
-  _globals['_GETPROJECTREQUEST']._serialized_start=868
-  _globals['_GETPROJECTREQUEST']._serialized_end=923
-  _globals['_GETPROJECTRESPONSE']._serialized_start=925
-  _globals['_GETPROJECTRESPONSE']._serialized_end=989
-  _globals['_OPERATIONRESPONSE']._serialized_start=991
-  _globals['_OPERATIONRESPONSE']._serialized_end=1050
-  _globals['_BUDGETITEM']._serialized_start=1052
-  _globals['_BUDGETITEM']._serialized_end=1103
-  _globals['_BUDGETCONTEXTREQUEST']._serialized_start=1105
-  _globals['_BUDGETCONTEXTREQUEST']._serialized_end=1199
-  _globals['_UNITPRICEREQUEST']._serialized_start=1201
-  _globals['_UNITPRICEREQUEST']._serialized_end=1237
-  _globals['_DEPARTMENTSPENDREQUEST']._serialized_start=1239
-  _globals['_DEPARTMENTSPENDREQUEST']._serialized_end=1280
-  _globals['_PROJECTSSERVICE']._serialized_start=1283
-  _globals['_PROJECTSSERVICE']._serialized_end=1963
+  _globals['_HARDWAREITEM']._serialized_start=71
+  _globals['_HARDWAREITEM']._serialized_end=126
+  _globals['_PROJECT']._serialized_start=129
+  _globals['_PROJECT']._serialized_end=330
+  _globals['_CREATEPROJECTREQUEST']._serialized_start=333
+  _globals['_CREATEPROJECTREQUEST']._serialized_end=547
+  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_start=549
+  _globals['_PROJECTMEMBERSHIPREQUEST']._serialized_end=628
+  _globals['_SEARCHPROJECTSREQUEST']._serialized_start=630
+  _globals['_SEARCHPROJECTSREQUEST']._serialized_end=725
+  _globals['_PROJECTSUMMARY']._serialized_start=727
+  _globals['_PROJECTSUMMARY']._serialized_end=801
+  _globals['_SEARCHPROJECTSRESPONSE']._serialized_start=803
+  _globals['_SEARCHPROJECTSRESPONSE']._serialized_end=882
+  _globals['_GETPROJECTREQUEST']._serialized_start=884
+  _globals['_GETPROJECTREQUEST']._serialized_end=939
+  _globals['_GETPROJECTRESPONSE']._serialized_start=941
+  _globals['_GETPROJECTRESPONSE']._serialized_end=1009
+  _globals['_OPERATIONRESPONSE']._serialized_start=1011
+  _globals['_OPERATIONRESPONSE']._serialized_end=1070
+  _globals['_BUDGETITEM']._serialized_start=1072
+  _globals['_BUDGETITEM']._serialized_end=1123
+  _globals['_BUDGETCONTEXTREQUEST']._serialized_start=1125
+  _globals['_BUDGETCONTEXTREQUEST']._serialized_end=1223
+  _globals['_UNITPRICEREQUEST']._serialized_start=1225
+  _globals['_UNITPRICEREQUEST']._serialized_end=1261
+  _globals['_DEPARTMENTSPENDREQUEST']._serialized_start=1263
+  _globals['_DEPARTMENTSPENDREQUEST']._serialized_end=1304
+  _globals['_PROJECTSSERVICE']._serialized_start=1307
+  _globals['_PROJECTSSERVICE']._serialized_end=2039
 # @@protoc_insertion_point(module_scope)
