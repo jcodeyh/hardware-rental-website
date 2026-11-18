@@ -1,10 +1,49 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import authService from '../service/authService';
+import { toast } from 'react-toastify';
 
-const ProjectCard = ({ project }) => {
+const ProjectCard = ({ project, onLeave}) => {
   const { id, name, description, hardware = {} } = project;
   const navigate = useNavigate();
+const { user } = useAuth();
+const [leaving, setLeaving] = useState(false);
 
+const handleLeave = async (e) => {
+  e.stopPropagation(); // Prevent opening the project
+  if (leaving) return;
+
+  if (!user?.userId || !user?.orgId) {
+    toast.error('Please log in again.');
+    return;
+  }
+
+  if (!window.confirm(`Leave project "${name}"?`)) return;
+
+  const requestObject = {
+    orgId: user.orgId,
+    projectId: id,
+    userId: user.userId
+  };
+
+  setLeaving(true);
+  try {
+    const result = await authService.leaveProject(requestObject);
+
+    if (result?.error) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success('You left the project.');
+    await onLeave?.();
+  } catch (err) {
+    toast.error('Could not leave project: ' + err.message);
+  } finally {
+    setLeaving(false);
+  }
+};
   // Extract hardware keys (e.g., "HW set 1", "HW set 2" or "hw1", "hw2")
   const hwEntries = Object.entries(hardware);
 
@@ -42,6 +81,16 @@ const ProjectCard = ({ project }) => {
           }}
         >
           Open →
+        </button>
+
+        <button
+          type="button"
+          className='secondary'
+          id={`btn-leave-project-${id}`}
+          onClick={handleLeave}
+          disabled={leaving}
+        >
+          {leaving ? 'Leaving...' : 'Leave'}
         </button>
       </div>
     </div>

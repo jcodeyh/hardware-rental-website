@@ -9,6 +9,7 @@ const URLs = {
   "projects"        : "/projects",
   "joinProject"     : "/projects/join",
   "getUserProjects" : "/projects/mine",
+  "leaveProject"    : "/projects/leave",
 
   "hardware"        : "/hardware",
   "checkOut"        : "/hardware/check-out",

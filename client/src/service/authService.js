@@ -85,6 +85,10 @@ class AuthService {
     return this.send(URLs.joinProject, "POST", requestObject);
   }
 
+  leaveProject(requestObject){
+    return this.send(URLs.leaveProject, "POST", requestObject);
+  }
+
   getUserProjects() {
     return this.send(URLs.getUserProjects);
   }
