@@ -127,6 +127,7 @@ def _channel(request: Request):
 
 
 def _grpc_error(error: grpc.aio.AioRpcError):
+    logger.error("gRPC error: code=%s, details=%s", error.code().name, error.details())
     mapping = {
         grpc.StatusCode.INVALID_ARGUMENT: 422,
         grpc.StatusCode.NOT_FOUND: 404,

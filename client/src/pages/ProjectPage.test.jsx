@@ -50,6 +50,7 @@ describe('ProjectPage', () => {
     expect(document.getElementById('btn-checkin-hw-2')).toBeDisabled()
     expect(document.getElementById('btn-checkout-hw-2')).toBeEnabled()
     expect(screen.getByText('alice')).toBeInTheDocument()
+    expect(document.querySelector('.notification-bell')).toBeInTheDocument()
   })
 
   it('caps check-out at remaining and check-in at out', async () => {

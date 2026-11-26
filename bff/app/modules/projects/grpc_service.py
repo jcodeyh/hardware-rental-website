@@ -1,4 +1,6 @@
 
+import logging
+
 import grpc
 import httpx
 from google.protobuf import json_format, struct_pb2
@@ -6,6 +8,8 @@ from google.protobuf import json_format, struct_pb2
 from app.core.upstream import upstream_message
 from proto import projects_pb2 as pb
 from proto import projects_pb2_grpc as pb_grpc
+
+logger = logging.getLogger(__name__)
 
 from .mapper import (
     budget_context_to_json,
@@ -42,6 +46,7 @@ class ProjectsService(pb_grpc.ProjectsServiceServicer):
             return await operation()
 
         except grpc.aio.AioRpcError as exc:
+            logger.error("Projects upstream gRPC failed: status=%s, details=%s", exc.code().name, exc.details())
             await context.abort(exc.code(), exc.details() or f"Projects API returned {exc.code().name}")
 
         except httpx.HTTPStatusError as exc:

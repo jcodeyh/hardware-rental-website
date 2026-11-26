@@ -41,7 +41,7 @@ const Navbar = ({ onJoinClick, onAddClick }) => {
             Logout
           </button>
            <div className="notification-bell">
-          <NotificationBell userId={user?.userId} />
+          <NotificationBell userId={user?.userId || user?.user_id || user?.id} />
         </div>
         </div>
       </div>

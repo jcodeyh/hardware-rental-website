@@ -41,6 +41,7 @@ class AuthService {
     data.status = response.status;
     if (!response.ok) {
       data.error = errorMessage(data, response.status);
+      console.error(`[API Error] ${method} ${path} (${response.status}):`, data.error, data);
     }
     return data;
   }

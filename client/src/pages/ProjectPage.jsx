@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import authService from '../service/authService';
 import { useAuth } from '../context/AuthContext.jsx';
+import NotificationBell from '../components/NotificationBell';
 
 const QuantityModal = ({ isOpen, hwLabel, mode, maxQty, onConfirm, onClose }) => {
   const [qty, setQty] = useState('');
@@ -83,6 +84,7 @@ const ProjectPage = () => {
   const [modal, setModal] = useState({ open: false, hw: null, mode: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -171,6 +173,27 @@ const ProjectPage = () => {
     }
   };
 
+  const handleLeaveProject = async () => {
+    if (leaving) return;
+    if (!window.confirm(`Leave project "${project.name}"?`)) return;
+    setLeaving(true);
+    try {
+      const result = await authService.leaveProject({
+        projectId: project.id,
+      });
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success('You left the project.');
+      navigate('/landingPage');
+    } catch (err) {
+      toast.error('Could not leave project: ' + err.message);
+    } finally {
+      setLeaving(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -199,7 +222,19 @@ const ProjectPage = () => {
           <span className="navbar-username">
             Welcome, <strong>{user?.username || 'User'}</strong>
           </span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            id="btn-leave-project-detail"
+            onClick={handleLeaveProject}
+            disabled={leaving}
+          >
+            {leaving ? 'Leaving...' : 'Leave Project'}
+          </button>
           <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+          <div className="notification-bell">
+            <NotificationBell userId={user?.userId || user?.user_id || user?.id} />
+          </div>
         </div>
       </nav>
 
