@@ -1,58 +1,45 @@
 import React, { useState } from 'react';
 import authService from '../service/authService';
 
-const JoinProjectModal = ({ isOpen, onClose, joinedProjectIds = [], allSystemProjects = [], onJoin }) => {
+const JoinProjectModal = ({ isOpen, onClose, onJoin }) => {
   const [projectId, setProjectId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const cleanId = projectId.trim();
-    if (!cleanId) {
-      setError('Project ID is required.');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (loading) return;
+
+  const cleanId = projectId.trim();
+
+  if (!cleanId) {
+    setError('Project ID is required.');
+    return;
+  }
+
+  setError('');
+  setLoading(true);
+
+  try {
+    const result = await authService.joinProject({
+      projectId: cleanId
+    });
+
+    if (result.error) {
+      setError(result.error);
       return;
     }
 
-    // Verify if project exists in system registry (fetched from /api/inventory)
-    const matchedProject = allSystemProjects.find(
-      (p) => p.id.toLowerCase() === cleanId.toLowerCase()
-    );
-
-    if (!matchedProject) {
-      setError('Project ID does not exist. Check the ID and try again.');
-      return;
-    }
-
-    // Verify if user is already a member locally
-    if (joinedProjectIds.some((id) => id.toLowerCase() === cleanId.toLowerCase())) {
-      setError('You have already joined this project.');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-
-    try {
-      // Call the backend to add the current user to the project's users array
-      const result = await authService.joinProject({ projectId: cleanId });
-
-      if (result.error) {
-        setError(result.error);
-        setLoading(false);
-        return;
-      }
-
-      onJoin(matchedProject);
-      setProjectId('');
-    } catch (err) {
-      setError('Network error: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    await onJoin({ id: cleanId });
+    setProjectId('');
+  } catch (err) {
+    setError('Unable to join project: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleClose = () => {
     setProjectId('');
