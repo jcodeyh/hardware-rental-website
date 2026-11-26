@@ -1,11 +1,16 @@
 import { Inbox } from '@novu/react';
 
 export default function NotificationBell({ userId }) {
+  const applicationIdentifier =
+    import.meta.env.VITE_NOVU_APP_IDENTIFIER || 'w7tJlfaANocl';
+
+  const subscriberId = String(userId || 'local-preview-user');
+
   return (
     <Inbox
-      applicationIdentifier="w7tJlfaANocl"
+      applicationIdentifier={applicationIdentifier}
       subscriber={{
-        subscriberId: String(userId || 'local-preview-user'),
+        subscriberId,
       }}
     />
   );

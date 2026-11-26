@@ -116,7 +116,7 @@ const LandingPage = () => {
             </p>
           </div>
         ) : (
-          <ProjectList projects={projects} />
+          <ProjectList projects={projects} onLeave={fetchProjects} />
         )}
       </main>
 

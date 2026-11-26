@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "bff/.env"),
         extra="ignore",
     )
 
